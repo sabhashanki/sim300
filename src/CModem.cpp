@@ -71,6 +71,7 @@ CModem::CModem(CUART * _pUart) {
 }
 
 bool CModem::connect(bool useDns) {
+  c08 txcmd[MDM_MAX_TX_CMD_LEN];
   u08 rc = 0;
   retry: if (rc > 4)
     return false;
@@ -196,6 +197,7 @@ void CModem::ServerSetIP(c08* _IP, c08 *_port, bool _usedns) {
 
 /*******************************************************************************/
 bool CModem::DataToServer(c08* dat) {
+  c08 txcmd[MDM_MAX_TX_CMD_LEN];
   if (mdmState == MDM_READY&& connect_ok == true && registered_ok == true && simcard_ok
   == true && signal_ok == true) {
     strcpy(txcmd, dat);
@@ -695,6 +697,7 @@ void CModem::setNextState(eMdmState nextState) {
 //}
 /*******************************************************************************/
 bool CModem::HandleAtCmd(const char *cmd, char* rspStr, c08* _rxRsp) {
+  c08 txcmd[MDM_MAX_TX_CMD_LEN];
   bool ret;
   strcpy_P(txcmd, cmd);
   DbgUart.sendStr(txcmd);

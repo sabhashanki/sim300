@@ -105,7 +105,6 @@ class CModem {
     volatile u32 atomicTime;
     volatile u32 serviceTime;
     u32 timeout;
-    c08 txcmd[MDM_MAX_TX_CMD_LEN];
     u16 txlen;
     u16 rxlen;
     u08 rxindex;
