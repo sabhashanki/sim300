@@ -33,6 +33,7 @@
  AT+CIPSTART="UDP","192.168.1.1","1720" = this is for UDP,
  */
 
+PROGMEM char AT_CALL_READY[] = "Call Ready";
 PROGMEM char AT_OK[] = "\r\nOK\r\n";
 PROGMEM char AT_RDY[] = ">";
 PROGMEM char AT_NONE[] = "";
@@ -88,112 +89,56 @@ bool CModem::Init(void) {
     _delay_ms(5);
   }
   _delay_ms(6000);
-  // Check Call Ready
-//  pUart->clearRx();
-//  while(1){
-//    cnt++;
-//  }
-//  memset(rxmsg, 0, sizeof(rxmsg));
-//  str = rxmsg;
-//  do {
-//    if (pUart->rxnum() > 0) {
-//      pUart->receive((u08*) str, 1);
-//      str++;
-//      if (strstr_P(rxmsg, PSTR("Call Ready"))) {
-//        done = true;
-//      }
-//    }
-//    _delay_ms(5);
-//    cnt++;
-//    if (cnt > 500) {
-//      //goto retry;
-//    }
-//  } while (!done);
-//  while (1) {
-//    if (DbgUart.receive((u08*) rxmsg, 1) == 1) {
-//      pUart->send((c08*) rxmsg, 1);
-//    }
-//    if (pUart->receive((u08*) rxmsg, 1) == 1) {
-//      DbgUart.send(rxmsg, 1);
-//    }
-//  }
-  HandleAtCmd("ATE0\r", AT_NONE);
-  HandleAtCmd(PSTR("ATE0\r"), AT_NONE);
-  HandleAtCmd(PSTR("ATE0\r"), AT_NONE);
   HandleAtCmd(PSTR("ATE0\r"), AT_NONE);
   if (!HandleAtCmd(PSTR("AT\r"), AT_OK))
     goto retry;
-//  if (!HandleAtCmd(PSTR("AT+CIPHEAD=1\r"), AT_OK))
-//    goto retry;
-//  if (!HandleAtCmd(PSTR("AT+CMGF=1\r"), AT_OK))
-//    goto retry;
-//  if (HandleAtCmd(PSTR("AT+CSQ\r"), AT_OK, rxmsg)) {
-//    DbgUart.sendStr(rxmsg);
-//    pStr = rxmsg;
-//    str = strsep(&pStr, ":");
-//    DbgUart.sendStr(str);
-//    str = strsep(&pStr, ",");
-//    DbgUart.sendStr(str);
-//    signalStrenght = atoi(str);
-//    signal_ok = false;
-//    if (signalStrenght < 30 && signalStrenght > 5) {
-//      signal_ok = true;
-//    } else {
-//      DbgUart.sendStr_P(PSTR("\n\rSIGNAL STRENGHT TOO LOW!!"));
-//    }
-//  } else {
-//    goto retry;
-//  }
-//  if (!HandleAtCmd(PSTR("AT+CPIN?\r"), AT_OK, rxmsg)) {
-//    goto retry;
-//  } else {
-//    simcard_ok = false;
-//    if (strstr_P(rxmsg, PSTR("+CPIN: READY"))) {
-//      simcard_ok = true;
-//    } else if (strstr_P(rxmsg, PSTR("+CME ERROR"))) {
-//      DbgUart.sendStr_P(PSTR("\n\rNO SIMCARD!!"));
-//      error = ERR_NO_SIMCARD;
-//      return false;
-//    } else if (strstr_P(rxmsg, PSTR("+CPIN: SIM PIN"))) {
-//      DbgUart.sendStr_P(PSTR("\n\rPIN ON SIMCARD!!"));
-//      error = ERR_PIN_ON_SIMCARD;
-//      return false;
-//    }
-//  }
-//  }
-//  break;
-//case MDM_SET_SIMCARD_PIN:
-//  timeout = MDM_TIMEOUT_VAL * 5; //5seconds
-//  strcpy_P(txcmd, PSTR("AT+CPIN="));
-//  strcpy(pincode, "3470");
-//  if (strlen(pincode) < 4) {
-//    mdmState = MDM_FAILED; // TODO maybe goto a restart state?
-//#if MDM_DEBUG_LEVEL > 2
-//        DbgUart.sendStr_P(PSTR("\n\rNO VALID PIN SET"));
-//#endif
-//    break;
-//  }
-//  strcat(txcmd, pincode);
-//  strcat_P(txcmd, PSTR("\r"));
-//  if (HandleAtCmd(txcmd, AT_OK)) {
-//    simcard_ok = true;
-//    mdmState = MDM_GET_SIMCARD_STATUS;
-//  }
-//  break;
-
-  if (!HandleAtCmd(PSTR("AT+CREG?\r"), AT_OK))
+  if (!HandleAtCmd(PSTR("AT+CIPHEAD=1\r"), AT_OK))
     goto retry;
-//  registered_ok = false;
-//  if (strstr_P(rxmsg, PSTR("+CREG: 0,1"))) {
-//    registered_ok = true;
-//    mdmState = MDM_IP_STATUS;
-//  } else {
-//    error_cnt++;
-//    if (error_cnt > 200) {
-//      mdmState = MDM_FAILED;
-//      DbgUart.sendStr_P(PSTR("\n\rSIMCARD REGISTRATION FAILED!!"));
-//    }
-//  }
+  if (!HandleAtCmd(PSTR("AT+CMGF=1\r"), AT_OK))
+    goto retry;
+  if (HandleAtCmd(PSTR("AT+CSQ\r"), AT_OK, rxmsg)) {
+    DbgUart.sendStr(rxmsg);
+    pStr = rxmsg;
+    str = strsep(&pStr, ":");
+    DbgUart.sendStr(str);
+    str = strsep(&pStr, ",");
+    DbgUart.sendStr(str);
+    signalStrenght = atoi(str);
+    signal_ok = false;
+    if (signalStrenght < 30 && signalStrenght > 5) {
+      signal_ok = true;
+    } else {
+      DbgUart.sendStr_P(PSTR("\n\rSIGNAL STRENGHT TOO LOW!!"));
+    }
+  } else {
+    goto retry;
+  }
+  if (!HandleAtCmd(PSTR("AT+CPIN?\r"), AT_OK, rxmsg)) {
+    goto retry;
+  } else {
+    simcard_ok = false;
+    if (strstr_P(rxmsg, PSTR("+CPIN: READY"))) {
+      simcard_ok = true;
+    } else if (strstr_P(rxmsg, PSTR("+CME ERROR"))) {
+      DbgUart.sendStr_P(PSTR("\n\rNO SIMCARD!!"));
+      error = ERR_NO_SIMCARD;
+      return false;
+    } else if (strstr_P(rxmsg, PSTR("+CPIN: SIM PIN"))) {
+      DbgUart.sendStr_P(PSTR("\n\rPIN ON SIMCARD!!"));
+      error = ERR_PIN_ON_SIMCARD;
+      return false;
+    }
+  }
+  if (!HandleAtCmd(PSTR("AT+CREG?\r"), AT_OK, rxmsg)) {
+    goto retry;
+  } else {
+    registered_ok = false;
+    if (strstr_P(rxmsg, PSTR("+CREG: 0,1"))) {
+      registered_ok = true;
+    } else {
+      goto retry;
+    }
+  }
 //  strcpy_P(txcmd, PSTR("AT+CIPSTATUS\r"));
 //  connect_ok = false;
 //  if (HandleAtCmd(PSTR("AT+CIPSTATUS\r"), AT_DATA)) {
