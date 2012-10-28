@@ -69,6 +69,51 @@ CModem::CModem(CUART * _pUart) {
   smstx_en = true;
   gprsrx = false;
 }
+
+bool CModem::connect(bool useDns) {
+  u08 rc = 0;
+  retry: if (rc > 4)
+    return false;
+  if (!HandleAtCmd(PSTR("AT+CGDCONT=1,\"IP\",\"internet\"\r"), AT_OK))
+    goto retry;
+  if (!HandleAtCmd(PSTR("AT+CIPSRIP=0\r"), AT_OK))
+    goto retry;
+  if (usedns) {
+    if (!HandleAtCmd(PSTR("AT+CDNSORIP=1\r"), AT_OK))
+      goto retry;
+    strcpy_P(txcmd, PSTR("AT+CDNSCFG=\""));
+    strcat(txcmd, DYNDNS_IP);
+    strcat_P(txcmd, PSTR("\"\r"));
+    if (!HandleAtCmd(txcmd, AT_OK))
+      goto retry;
+  } else {
+    if (!HandleAtCmd(PSTR("AT+CDNSORIP=0\r"), AT_OK))
+      goto retry;
+  }
+  strcpy_P(txcmd, PSTR("AT+CLPORT=\"TCP\",\""));
+  strcat(txcmd, port);
+  strcat(txcmd, "\"\r");
+  if (!HandleAtCmd(txcmd, AT_OK))
+    goto retry;
+  strcpy_P(txcmd, PSTR("AT+CSTT=\"internet\",\"\",\"\"\r"));
+  if (!HandleAtCmd(txcmd, AT_OK))
+    goto retry;
+  strcpy_P(txcmd, PSTR("AT+CIICR\r"));
+  if (!HandleAtCmd(txcmd, AT_OK))
+    goto retry;
+  strcpy_P(txcmd, PSTR("AT+CIFSR\r"));
+  if (!HandleAtCmd(txcmd, AT_OK))
+    goto retry;
+  strcpy(txcmd, "AT+CIPSTART=\"TCP\",\"");
+  strcat(txcmd, serverIP);
+  strcat(txcmd, "\",\"");
+  strcat(txcmd, port);
+  strcat(txcmd, "\"\r");
+  if (!HandleAtCmd(txcmd, AT_CONNECT))
+    goto retry;
+  DbgUart.sendStr("MODEM CONNECTED!!");
+  return true;
+}
 /*******************************************************************************/
 bool CModem::Init(void) {
   c08* str;
@@ -139,231 +184,6 @@ bool CModem::Init(void) {
       goto retry;
     }
   }
-//  strcpy_P(txcmd, PSTR("AT+CIPSTATUS\r"));
-//  connect_ok = false;
-//  if (HandleAtCmd(PSTR("AT+CIPSTATUS\r"), AT_DATA)) {
-//    if (strstr_P(rxmsg, AT_CONNECT)) {
-//      mdmState = MDM_READY;
-//      connect_ok = true;
-//      DbgUart.sendStr((u08*) "MODEM CONNECTED!!");
-//    }
-//    if (strstr_P(rxmsg, PSTR("INITIAL"))) {
-//      mdmState = MDM_CONNECT_TO_SERVER;
-//    } else if (strstr_P(rxmsg, PSTR("IP CLOSE"))) {
-//      mdmState = MDM_START_IP;
-//    } else if (strstr_P(rxmsg, PSTR("STATE: PDP DEACT"))) {
-//      mdmState = MDM_IPSHUTDOWN;
-//    } else {
-//      mdmState = MDM_READY;
-//    }
-//  }
-//  break;
-//
-//  /*******************************************************************************/
-//  case MDM_READ_SMS:
-//  strcpy_P(txcmd, PSTR("AT+CMGR="));
-//  strcat(txcmd, sms.nr);
-//  strcat_P(txcmd, PSTR("\r"));
-//  if (HandleAtCmd(txcmd, AT_DATA)) {
-//    strcpy(sms.message, rxmsg);
-//    mdmState = MDM_READY;
-//    smsrx = true;
-//  }
-//  break;
-//
-//  case MDM_SEND_SMS:
-//  timeout = MDM_TIMEOUT_VAL * 5; //5seconds
-//#ifdef SMS_DEBUG
-//#warning SMSDEBUG IS ENABLED
-//      if(atomicTime>timeout) {
-//        mdmState = MDM_READY;
-//        DbgUart.sendStr_P(PSTR("\n\r ## SMS SEND OK ##"));
-//      }
-//#else
-//
-//  strcpy_P(txcmd, PSTR("AT+CMGS=\""));
-//  strcat(txcmd, sms.phonenum);
-//  strcat_P(txcmd, PSTR("\"\r"));
-//  if (HandleAtCmd(txcmd, AT_RDY)) {
-//    pUart->sendStr((u08*) sms.message);
-//    pUart->sendStr_P(PSTR("\x1A"));
-//    mdmState = MDM_SMS_WAIT_SEND_OK;
-//  } else if (cmdState == SEND) { //a timeout occured
-//    pUart->sendStr_P(PSTR("\x1B")); // send an escape
-//  }
-//  break;
-//
-//  case MDM_SMS_WAIT_SEND_OK:
-//  timeout = MDM_TIMEOUT_VAL * 5; //5seconds
-//  if (GetAtResp(AT_OK)) {
-//#if MDM_DEBUG_LEVEL > 2
-//    DbgUart.sendStr_P(PSTR("\n\rSMS SEND OK"));
-//#endif
-//    mdmState = MDM_READY;
-//  } else if (cmdState == SEND) { //a timeout occured
-//#if MDM_DEBUG_LEVEL > 2
-//      DbgUart.sendStr_P(PSTR("\n\rSMS SEND ERROR"));
-//#endif
-//    mdmState = MDM_SEND_SMS;
-//    taskRetry++;
-//  }
-//#endif
-//  break;
-//
-//  case MDM_CONNECT_TO_SERVER:
-//  strcpy_P(txcmd, PSTR("AT+CGDCONT=1,\"IP\",\"internet\"\r"));
-//  if (HandleAtCmd(txcmd, AT_OK)) {
-//    mdmState = MDM_SET_SHOW_REMOTE_IP;
-//  }
-//  break;
-//  case MDM_SET_SHOW_REMOTE_IP:
-//  strcpy_P(txcmd, PSTR("AT+CIPSRIP=0\r"));
-//  if (HandleAtCmd(txcmd, AT_OK)) {
-//    mdmState = MDM_SET_DNS_CONNECT;
-//  }
-//  break;
-//  case MDM_SET_DNS_CONNECT:
-//  failState = MDM_IPSHUTDOWN;
-//  if (usedns) {
-//    strcpy_P(txcmd, PSTR("AT+CDNSORIP=1\r"));
-//    if (HandleAtCmd(txcmd, AT_OK)) {
-//      mdmState = MDM_SET_DNS_CONFIG;
-//    }
-//  } else {
-//    strcpy_P(txcmd, PSTR("AT+CDNSORIP=0\r"));
-//    if (HandleAtCmd(txcmd, AT_OK)) {
-//      mdmState = MDM_SET_TCP_PORT;
-//    }
-//  }
-//  break;
-//  case MDM_SET_DNS_CONFIG:
-//  failState = MDM_IPSHUTDOWN;
-//  strcpy_P(txcmd, PSTR("AT+CDNSCFG=\""));
-//  strcat(txcmd, DYNDNS_IP);
-//  strcat_P(txcmd, PSTR("\"\r"));
-//  if (HandleAtCmd(txcmd, AT_OK)) {
-//    mdmState = MDM_SET_TCP_PORT;
-//  }
-//  break;
-//  case MDM_SET_TCP_PORT:
-//  failState = MDM_IPSHUTDOWN;
-//
-//  strcpy_P(txcmd, PSTR("AT+CLPORT=\"TCP\",\""));
-//  strcat(txcmd, port);
-//  strcat(txcmd, "\"\r");
-//  if (HandleAtCmd(txcmd, AT_OK)) {
-//    mdmState = MDM_START_TCP_TASK;
-//  }
-//  break;
-//  case MDM_START_TCP_TASK:
-//  failState = MDM_IPSHUTDOWN;
-//  timeout = MDM_TIMEOUT_VAL * 30; //30 sekondes
-//  strcpy_P(txcmd, PSTR("AT+CSTT=\"internet\",\"\",\"\"\r"));
-//  if (HandleAtCmd(txcmd, AT_OK)) {
-//    mdmState = MDM_ACTIVATE_PDP;
-//  }
-//  break;
-//  case MDM_ACTIVATE_PDP:
-//  failState = MDM_IPSHUTDOWN;
-//  timeout = MDM_TIMEOUT_VAL * 30; //30 sekondes
-//  strcpy_P(txcmd, PSTR("AT+CIICR\r"));
-//  if (HandleAtCmd(txcmd, AT_OK)) {
-//    mdmState = MDM_GET_IP;
-//  }
-//  break;
-//  case MDM_GET_IP:
-//  failState = MDM_IPSHUTDOWN;
-//  timeout = MDM_TIMEOUT_VAL * 10; //10 sekondes
-//  strcpy_P(txcmd, PSTR("AT+CIFSR\r"));
-//  if (HandleAtCmd(txcmd, AT_OK)) {
-//    mdmState = MDM_START_IP;
-//  }
-//  if (cmdState == SEND) {
-//    DbgUart.sendStr((u08*) rxmsg);
-//    cmdState = START;
-//    mdmState = MDM_START_IP;
-//  }
-//  break;
-//  case MDM_START_IP:
-//  timeout = MDM_TIMEOUT_VAL * 30; //20 sekondes
-//  failState = MDM_IPSHUTDOWN;
-//  strcpy(txcmd, "AT+CIPSTART=\"TCP\",\"");
-//  strcat(txcmd, serverIP);
-//  strcat(txcmd, "\",\"");
-//  strcat(txcmd, port);
-//  strcat(txcmd, "\"\r");
-//  connect_ok = false;
-//  if (HandleAtCmd(txcmd, AT_CONNECT)) {
-//    connect_ok = true;
-//    DbgUart.sendStr((u08*) "MODEM CONNECTED!!");
-//    mdmState = MDM_IP_STATUS;
-//  }
-//  if (cmdState == SEND) {
-//    cmdState = START;
-//    mdmState = MDM_IP_STATUS;
-//  }
-//  break;
-//  case MDM_IP_SEND:
-//  failState = MDM_START_IP;
-//  if (HandleAtCmd("AT+CIPSEND\r", AT_RDY)) {
-//    mdmState = MDM_IPSEND_VERIFY;
-//    cmdState = START;
-//    DbgUart.sendStr((u08*) txcmd);
-//    pUart->sendStr((u08*) txcmd);
-//    pUart->sendStr_P(PSTR("\x1A\r"));
-//  }
-//  break;
-//  case MDM_IPSEND_VERIFY:
-//  timeout = MDM_TIMEOUT_VAL * 30;
-//  failState = MDM_IPSHUTDOWN;
-//  if (GetAtResp(AT_SEND_OK)) {
-//    DbgUart.sendStr((u08*) "\n\rSUKSES");
-//    mdmState = MDM_READY;
-//  } else if (cmdState == SEND) { //a timeout occured
-//#if MDM_DEBUG_LEVEL > 2
-//      DbgUart.sendStr_P(PSTR("\n\rDATA SEND ERROR"));
-//#endif
-//    mdmState = MDM_IP_SEND;
-//    taskRetry++;
-//  }
-//  break;
-//
-//  case MDM_IPSHUTDOWN:
-//  strcpy_P(txcmd, PSTR("AT+CIPSHUT\r"));
-//  if (HandleAtCmd(txcmd, AT_OK)) {
-//    mdmState = MDM_CONNECT_TO_SERVER;
-//  }
-//  connect_ok = false;
-//  break;
-//
-//  case MDM_GET_BALANCE:
-//  timeout = MDM_TIMEOUT_VAL * 10; //10 sekondes
-//  strcpy_P(txcmd, PSTR("ATD*100#\r"));
-//  if (HandleAtCmd(txcmd, AT_DATA)) {
-//    mdmState = MDM_READY;
-//    DbgUart.sendStr((u08*) rxmsg);
-//  }
-//  break;
-//
-//  case MDM_FAILED:
-//  break;
-//
-//  case MDM_READY:
-//  break;
-//
-//  default:
-//  break;
-//}
-//
-//return true;
-//}
-//
-//void CModem::clearTimer(void) {
-//ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-//{
-//  isr_timer = 0;
-//  atomicTime = 0;
-//}
   return true;
 }
 
@@ -878,6 +698,7 @@ bool CModem::HandleAtCmd(const char *cmd, char* rspStr, c08* _rxRsp) {
   bool ret;
   strcpy_P(txcmd, cmd);
   DbgUart.sendStr(txcmd);
+  pUart->clear();
   pUart->sendStr(txcmd);
   ret = GetAtResp(rspStr, _rxRsp);
   return ret;

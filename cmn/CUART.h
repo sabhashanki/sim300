@@ -72,6 +72,10 @@ class CUART {
     u16 space(void);
     u16 rxnum(void);
     void clearRx(void);
+    void clear(void) {
+      txFIFO.clear();
+      rxFIFO.clear();
+    }
     void setBaudRate(u32 baudrate);
     void setFrame(void);
 	/// Interrupt routines.

@@ -145,6 +145,7 @@ class CModem {
     u08 gprsrx;
     CModem(CUART * _pUart);
     bool Init(void);
+    bool connect(bool useDns);
     void Service(void);
     bool SIMCheckReady(void);
     void UpdateMdmStatus(void);
