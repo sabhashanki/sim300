@@ -6,7 +6,6 @@
 #include "common.h"
 #include "CUART.h"
 
-
 //namespace CMODEM
 //{
 #define MDM_TIMEOUT_VAL  1000000 //1sec
@@ -15,18 +14,19 @@
 #define MDM_MAX_TX_CMD_LEN  254
 #define MDM_MAX_RX_CMD_LEN  254
 
-
-  //*****************************************************************************
-  typedef enum
-  {
-    START = 1,
-    SEND,
-    RETRY,
-  } eCmdState;
-  //*****************************************************************************
-  typedef enum
-  {
-    MDM_UNCONNECTED = 3,
+//*****************************************************************************
+typedef enum {
+  ERR_NONE ,
+  ERR_NO_SIMCARD,
+  ERR_PIN_ON_SIMCARD
+} eMdmError;
+//*****************************************************************************
+typedef enum {
+  START = 1, SEND, RETRY,
+} eCmdState;
+//*****************************************************************************
+typedef enum {
+  MDM_UNCONNECTED = 3,
     MDM_STARTUP,
     MDM_CONFIGURE,
     MDM_WAIT_CALL_READY,
@@ -77,39 +77,36 @@
     MDM_START_TCP_TASK,
     MDM_GET_IP,
     MDM_FAILED
-  } eMdmState;
-  /*****************************************************************************/
-  typedef struct
-  {
+} eMdmState;
+/*****************************************************************************/
+typedef struct {
     u08 index;
     u08 name[20];
     u08 nameLen;
     u08 number[30];
     u08 numberLen;
     u08 addrType;
-  } sPhoneBook;
-  /*****************************************************************************/
-  typedef struct
-  {
+} sPhoneBook;
+/*****************************************************************************/
+typedef struct {
     c08 nr[10];
     c08 phonenum[32];
     c08 timestamp[32];
     c08 message[140];
-  } sSMS;
-  //*****************************************************************************
-  class CModem
-  {
-    private:
+} sSMS;
+//*****************************************************************************
+class CModem {
+  private:
 
     eMdmState mdmState;
     eCmdState cmdState;
     eMdmState failState;
+    eMdmError error;
     volatile u32 atomicTime;
     volatile u32 serviceTime;
     u32 timeout;
     c08 txcmd[MDM_MAX_TX_CMD_LEN];
     u16 txlen;
-    c08 rxmsg[MDM_MAX_RX_CMD_LEN];
     u16 rxlen;
     u08 rxindex;
     u08 retry;
@@ -121,22 +118,17 @@
     u08 debugLevel;
     u08 pwrState;
     u08 initState;
-    c08 *str;
     c08 *pRx;
 
     u08 error_cnt;
-    bool GetAtResp(PGM_P rspStr);
-
+    bool GetAtResp(char* rspStr,c08* rxRsp = NULL);
     void StartupTask(void);
     void ConfigureTask(void);
-    bool Init(void);
-    //bool (CModem::*Callback)(eMdmState, eMdmState,PGM_P);
-    bool HandleAtCmd(c08 *str, PGM_P rspStr);
-    //void SetCallback( u08 (CModem::*Task)(u08,u08,PGM_P));
+    bool HandleAtCmd(const char* cmd, char* rspStr, c08* _rxRsp = NULL);
     bool PowerOff(void);
     bool PowerOn(void);
     void clearTimer(void);
-  public:
+    public:
     CUART *pUart;
     u08 simcard_ok;
     u08 signal_ok;
@@ -152,6 +144,7 @@
     c08 gprsraw[MDM_MAX_RX_CMD_LEN];
     u08 gprsrx;
     CModem(CUART * _pUart);
+    bool Init(void);
     void Service(void);
     bool SIMCheckReady(void);
     void UpdateMdmStatus(void);

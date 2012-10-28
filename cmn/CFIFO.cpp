@@ -31,7 +31,7 @@ u16 CFIFO::space(void) {
     used = headIndex - tailIndex;
   else
     used = size + headIndex - tailIndex;
-  return (size-used-1);
+  return (size - used - 1);
 }
 
 u16 CFIFO::received(void) {
@@ -60,15 +60,14 @@ u16 CFIFO::add(u08 *src, u16 numBytes) {
   return cnt;
 }
 
-u08 CFIFO::empty(void){
-  return (space() == (size-1));
+u08 CFIFO::empty(void) {
+  return (space() == (size - 1));
 }
 
-void CFIFO::clear(void){
-	tailIndex = 0;
-	headIndex = 0;
+void CFIFO::clear(void) {
+  tailIndex = 0;
+  headIndex = 0;
 }
-
 
 u16 CFIFO::remove(u08 *dst, u16 numBytes) {
   u16 cnt = 0;
@@ -77,6 +76,9 @@ u16 CFIFO::remove(u08 *dst, u16 numBytes) {
     used = headIndex - tailIndex;
   else
     used = size + headIndex - tailIndex;
+  if (numBytes == 0) {
+    numBytes = used;
+  }
   while (cnt < numBytes && used > 0) {
     *dst = buffer[tailIndex];
     tailIndex = (tailIndex + 1) % size;

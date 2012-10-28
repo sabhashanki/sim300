@@ -102,4 +102,6 @@ typedef   signed long	int64_t;
 #define MIN_S32	-2147483648
 #define MAX_S32	2147483647
 
+//# define PSTR(s) (__extension__({static prog_char __c[] = (s); &__c[0];}))
+
 #endif

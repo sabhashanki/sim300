@@ -67,7 +67,7 @@ class CUART {
     void sendStr(c08* str);
     void uprintf(const char *__fmt, ...);
 #endif
-    u16 receive(u08* buffer, u16 nBytes);
+    u16 receive(u08* buffer, u16 nBytes = 0);
     u16 peek(c08* buffer);
     u16 space(void);
     u16 rxnum(void);
