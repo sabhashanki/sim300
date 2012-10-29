@@ -21,7 +21,7 @@
 /*
  AT = OK, just to make the modem respond
  ATE1 = OK , enable the ECHO
- AT+CGATT=1 = OK, enable GPRS
+ AT+CGATT=1 e= OK, enable GPRS
  AT+CGDCONT=1,"IP","here_apn_provider" = OK, change for your APN
  AT+CSTT="here_apn_provider","user","pass" = Ok
  AT+CDNSORIP=0 = OK = to accept IP address(No domain name)
@@ -33,15 +33,17 @@
  AT+CIPSTART="UDP","192.168.1.1","1720" = this is for UDP,
  */
 
-PROGMEM char AT_CALL_READY[] = "Call Ready";
-PROGMEM char AT_OK[] = "\r\nOK\r\n";
-PROGMEM char AT_RDY[] = ">";
-PROGMEM char AT_NONE[] = "";
-PROGMEM char AT_SEND_OK[] = "SEND OK";
-PROGMEM char AT_CONNECT[] = "CONNECT OK";
-PROGMEM char AT_ERROR[] = "ERROR";
-PROGMEM char AT_DATA[] = "\r\n";
-PROGMEM char SIM_RDY[] = "+CPIN: READY";
+const char AT_CALL_READY[] = "Call Ready";
+const char AT_OK[] = "\r\nOK\r\n";
+const char AT_IP[] = ".";
+const char SHUT_OK[] = "SHUT OK";
+const char AT_RDY[] = ">";
+const char AT_NONE[] = "";
+const char AT_SEND_OK[] = "SEND OK";
+const char AT_CONNECT[] = "CONNECT OK";
+const char AT_ERROR[] = "ERROR";
+const char AT_DATA[] = "\r\n";
+const char SIM_RDY[] = "+CPIN: READY";
 
 extern CUART DbgUart;
 /*******************************************************************************/
@@ -69,40 +71,165 @@ CModem::CModem(CUART * _pUart) {
   smstx_en = true;
   gprsrx = false;
 }
+/*******************************************************************************/
+bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp) {
+  c08 rxRsp[MDM_MAX_RX_CMD_LEN];
+  memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
+  pUart->clear();
+  DbgUart.uprintf("\r\nCmd: %s", cmd);
+  pUart->sendStr(cmd);
+  _delay_ms(2100);
+  pUart->receive((u08*) rxRsp);
+  DbgUart.uprintf("\r\nRX: %s", rxRsp);
+  if (strstr((const char*) rxRsp, (c08*) _expRsp)) {
+    return true;
+  }
+  return false;
+}
+/*******************************************************************************/
+bool CModem::checkSignalStrength() {
+  const u08 len = 64;
+  c08 rxRsp[len];
+  c08 expRsp[len];
+  c08 cmd[len];
+  c08* pStr;
+  c08* str;
+  u08 signalStrenght;
+  memset(rxRsp, 0, len);
+  pUart->clear();
+  strcpy(cmd, "AT+CSQ\r");
+  strcpy(expRsp, AT_OK);
+  pUart->sendStr(cmd);
+  _delay_ms(300);
+  pUart->receive((u08*) rxRsp);
+  if (strstr(rxRsp, expRsp)) {
+    pStr = rxRsp;
+    str = strsep(&pStr, ":");
+    str = strsep(&pStr, ",");
+    signalStrenght = atoi(str);
+    if (signalStrenght < 30 && signalStrenght > 5) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/*******************************************************************************/
+bool CModem::checkSIM() {
+  const u08 len = 64;
+  c08 rsp[len];
+  c08 exp[len];
+  c08 cmd[len];
+  memset(rsp, 0, len);
+  pUart->clear();
+  strcpy(cmd, "AT+CPIN?\r");
+  strcpy(exp, AT_OK);
+  pUart->sendStr(cmd);
+  _delay_ms(300);
+  pUart->receive((u08*) rsp);
+  if (strstr(rsp, exp)) {
+    if (strstr(rsp, "+CPIN: READY")) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/*******************************************************************************/
+bool CModem::checkRegistration() {
+  const u08 len = 64;
+  c08 rsp[len];
+  c08 exp[len];
+  c08 cmd[len];
+  memset(rsp, 0, len);
+  pUart->clear();
+  strcpy(cmd, "AT+CREG?\r");
+  strcpy(exp, AT_OK);
+  pUart->sendStr(cmd);
+  _delay_ms(300);
+  pUart->receive((u08*) rsp);
+  if (strstr(rsp, exp)) {
+    if (strstr(rsp, "+CREG: 0,1"))
+      return true;
+  }
+  return false;
+}
+
+/*******************************************************************************/
+bool CModem::Init(void) {
+  PowerOff();
+  PowerOn();
+  CLR_DTR();
+  CLR_RTS();
+  _delay_ms(200);
+  SET_DTR();
+  _delay_ms(200);
+//Put RTS_logic 0 --> ready uP ready to TX
+  SET_RTS();
+  while (GET_CTS_STATUS()) {
+    _delay_ms(5);
+  }
+  _delay_ms(6000);
+  retry: HandleAtCmd("ATE0\r", AT_NONE);
+  if (!HandleAtCmd("AT\r", AT_OK))
+    goto retry;
+  if (!HandleAtCmd("AT+CIPHEAD=1\r", AT_OK))
+    goto retry;
+  if (!HandleAtCmd("AT+CMGF=1\r", AT_OK))
+    goto retry;
+  if (!checkSignalStrength())
+    goto retry;
+  if (!checkSIM())
+    goto retry;
+  if (!checkRegistration())
+    goto retry;
+  return true;
+}
+/*******************************************************************************/
 
 bool CModem::connect(bool useDns) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
   u08 rc = 0;
-  retry: if (rc > 4)
+  u08 c;
+
+  if (rc > 4)
     return false;
-  if (!HandleAtCmd(PSTR("AT+CGDCONT=1,\"IP\",\"internet\"\r"), AT_OK))
+  if (!HandleAtCmd("AT+CGATT=1\r", AT_OK))
     goto retry;
-  if (!HandleAtCmd(PSTR("AT+CIPSRIP=0\r"), AT_OK))
-    goto retry;
-  if (usedns) {
-    if (!HandleAtCmd(PSTR("AT+CDNSORIP=1\r"), AT_OK))
-      goto retry;
-    strcpy_P(txcmd, PSTR("AT+CDNSCFG=\""));
-    strcat(txcmd, DYNDNS_IP);
-    strcat_P(txcmd, PSTR("\"\r"));
-    if (!HandleAtCmd(txcmd, AT_OK))
-      goto retry;
-  } else {
-    if (!HandleAtCmd(PSTR("AT+CDNSORIP=0\r"), AT_OK))
-      goto retry;
-  }
-  strcpy_P(txcmd, PSTR("AT+CLPORT=\"TCP\",\""));
-  strcat(txcmd, port);
-  strcat(txcmd, "\"\r");
-  if (!HandleAtCmd(txcmd, AT_OK))
+  if (!HandleAtCmd("AT+CGDCONT=1,\"IP\",\"internet\"\r", AT_OK))
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CSTT=\"internet\",\"\",\"\"\r"));
   if (!HandleAtCmd(txcmd, AT_OK))
     goto retry;
+//  if (!HandleAtCmd("AT+CIPSRIP=0\r", AT_OK))
+//    goto retry;
+  if (usedns) {
+    if (!HandleAtCmd("AT+CDNSORIP=1\r", AT_OK))
+      goto retry;
+    strcpy_P(txcmd, "AT+CDNSCFG=\"");
+    strcat(txcmd, DYNDNS_IP);
+    strcat_P(txcmd, "\"\r");
+    if (!HandleAtCmd(txcmd, AT_OK))
+      goto retry;
+  } else {
+    if (!HandleAtCmd("AT+CDNSORIP=0\r", AT_OK))
+      goto retry;
+  }
+  retry: rc++;
+  if (rc > 4)
+    goto term;
+
   strcpy_P(txcmd, PSTR("AT+CIICR\r"));
+  //HandleAtCmd(txcmd, AT_OK);
   if (!HandleAtCmd(txcmd, AT_OK))
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CIFSR\r"));
+  //HandleAtCmd(txcmd, AT_OK);
+  if (!HandleAtCmd(txcmd, AT_IP))
+    goto retry;
+  strcpy_P(txcmd, PSTR("AT+CLPORT=\"TCP\",\""));
+  strcat(txcmd, port);
+  strcat(txcmd, "\"\r");
   if (!HandleAtCmd(txcmd, AT_OK))
     goto retry;
   strcpy(txcmd, "AT+CIPSTART=\"TCP\",\"");
@@ -114,80 +241,19 @@ bool CModem::connect(bool useDns) {
     goto retry;
   DbgUart.sendStr("MODEM CONNECTED!!");
   return true;
-}
-/*******************************************************************************/
-bool CModem::Init(void) {
-  c08* str;
-  c08* pStr;
-  c08 rxmsg[MDM_MAX_RX_CMD_LEN];
-  u16 cnt = 0;
-  bool done = false;
-  retry: PowerOff();
-  PowerOn();
-  CLR_DTR();
-  CLR_RTS();
-  _delay_ms(200);
-  SET_DTR();
-  _delay_ms(200);
-  //Put RTS_logic 0 --> ready uP ready to TX
-  SET_RTS();
-  while (GET_CTS_STATUS()) {
-    _delay_ms(5);
-  }
-  _delay_ms(6000);
-  HandleAtCmd(PSTR("ATE0\r"), AT_NONE);
-  if (!HandleAtCmd(PSTR("AT\r"), AT_OK))
-    goto retry;
-  if (!HandleAtCmd(PSTR("AT+CIPHEAD=1\r"), AT_OK))
-    goto retry;
-  if (!HandleAtCmd(PSTR("AT+CMGF=1\r"), AT_OK))
-    goto retry;
-  if (HandleAtCmd(PSTR("AT+CSQ\r"), AT_OK, rxmsg)) {
-    DbgUart.sendStr(rxmsg);
-    pStr = rxmsg;
-    str = strsep(&pStr, ":");
-    DbgUart.sendStr(str);
-    str = strsep(&pStr, ",");
-    DbgUart.sendStr(str);
-    signalStrenght = atoi(str);
-    signal_ok = false;
-    if (signalStrenght < 30 && signalStrenght > 5) {
-      signal_ok = true;
-    } else {
-      DbgUart.sendStr_P(PSTR("\n\rSIGNAL STRENGHT TOO LOW!!"));
-    }
-  } else {
-    goto retry;
-  }
-  if (!HandleAtCmd(PSTR("AT+CPIN?\r"), AT_OK, rxmsg)) {
-    goto retry;
-  } else {
-    simcard_ok = false;
-    if (strstr_P(rxmsg, PSTR("+CPIN: READY"))) {
-      simcard_ok = true;
-    } else if (strstr_P(rxmsg, PSTR("+CME ERROR"))) {
-      DbgUart.sendStr_P(PSTR("\n\rNO SIMCARD!!"));
-      error = ERR_NO_SIMCARD;
-      return false;
-    } else if (strstr_P(rxmsg, PSTR("+CPIN: SIM PIN"))) {
-      DbgUart.sendStr_P(PSTR("\n\rPIN ON SIMCARD!!"));
-      error = ERR_PIN_ON_SIMCARD;
-      return false;
-    }
-  }
-  if (!HandleAtCmd(PSTR("AT+CREG?\r"), AT_OK, rxmsg)) {
-    goto retry;
-  } else {
-    registered_ok = false;
-    if (strstr_P(rxmsg, PSTR("+CREG: 0,1"))) {
-      registered_ok = true;
-    } else {
-      goto retry;
-    }
-  }
-  return true;
-}
 
+  term: while (1) {
+    if (DbgUart.rxnum() > 0) {
+      DbgUart.receive(&c, 1);
+      pUart->send((c08*) &c, 1);
+    }
+    if (pUart->rxnum() > 0) {
+      pUart->receive(&c, 1);
+      DbgUart.send((c08*) &c, 1);
+    }
+  }
+
+}
 /*******************************************************************************/
 void CModem::ServerSetIP(c08* _IP, c08 *_port, bool _usedns) {
   usedns = _usedns;
@@ -261,9 +327,9 @@ eMdmState CModem::GetStateModem(void) {
 }
 /******************************************************************************/
 void CModem::setNextState(eMdmState nextState) {
-  //if (mdmState == MDM_READY) { // HACK
+//if (mdmState == MDM_READY) { // HACK
   mdmState = nextState;
-  //}
+//}
 }
 ///*******************************************************************************/
 //bool CModem::Init(void) {
@@ -695,18 +761,6 @@ void CModem::setNextState(eMdmState nextState) {
 //      break;
 //  }
 //}
-/*******************************************************************************/
-bool CModem::HandleAtCmd(const char *cmd, char* rspStr, c08* _rxRsp) {
-  c08 txcmd[MDM_MAX_TX_CMD_LEN];
-  bool ret;
-  strcpy_P(txcmd, cmd);
-  DbgUart.sendStr(txcmd);
-  pUart->clear();
-  pUart->sendStr(txcmd);
-  ret = GetAtResp(rspStr, _rxRsp);
-  return ret;
-}
-/*******************************************************************************/
 bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
   char expRsp[MDM_MAX_RX_CMD_LEN];
   char rxRsp[MDM_MAX_RX_CMD_LEN];
@@ -714,12 +768,12 @@ bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
   memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
   u08 cnt = 0;
   u08 len;
-  strcpy_P((c08*) expRsp, _expRsp);
+  strcpy((c08*) expRsp, _expRsp);
   len = strlen((c08*) expRsp);
   while (pUart->rxnum() < len) {
-    _delay_ms(5);
-    if ((cnt++) > 200)
-      return false;
+    _delay_ms(1);
+//    if ((cnt++) > 200)
+//      return false;
   }
   len = pUart->rxnum();
   pUart->receive((u08*) rxRsp, len);

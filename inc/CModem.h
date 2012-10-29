@@ -110,7 +110,6 @@ class CModem {
     u08 rxindex;
     u08 retry;
     u08 taskRetry;
-    u08 signalStrenght;
     char socket[8];
 
     c08 pincode[6];
@@ -123,7 +122,10 @@ class CModem {
     bool GetAtResp(char* rspStr,c08* rxRsp = NULL);
     void StartupTask(void);
     void ConfigureTask(void);
-    bool HandleAtCmd(const char* cmd, char* rspStr, c08* _rxRsp = NULL);
+    bool HandleAtCmd(c08* cmd, const char* _expRsp);
+    bool checkSignalStrength();
+    bool checkSIM();
+    bool checkRegistration();
     bool PowerOff(void);
     bool PowerOn(void);
     void clearTimer(void);
