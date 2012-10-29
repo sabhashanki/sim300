@@ -2,6 +2,12 @@
 *.slo
 *.lo
 *.o
+*.elf
+*.lss
+*.map
+*.mk
+*.d
+makefile
 
 # Compiled Dynamic libraries
 *.so
