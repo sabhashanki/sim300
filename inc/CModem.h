@@ -145,8 +145,8 @@ class CModem {
     c08 gprsraw[MDM_MAX_RX_CMD_LEN];
     u08 gprsrx;
     CModem(CUART * _pUart);
-    bool Init(void);
-    bool connect(bool useDns);
+    bool initModem(void);
+    bool initIP(bool useDns);
     void Service(void);
     bool SIMCheckReady(void);
     void UpdateMdmStatus(void);

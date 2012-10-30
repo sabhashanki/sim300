@@ -70,8 +70,8 @@ int main(void) {
     }
     //Rfid.Service();
     //Controller.Service();
-    Modem.Init();
-    Modem.connect(false);
+    Modem.initModem();
+    Modem.initIP(false);
 
     if (time > 200000) {
       time = 0;

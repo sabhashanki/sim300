@@ -156,7 +156,7 @@ bool CModem::checkRegistration() {
 }
 
 /*******************************************************************************/
-bool CModem::Init(void) {
+bool CModem::initModem(void) {
   PowerOff();
   PowerOn();
   CLR_DTR();
@@ -187,22 +187,20 @@ bool CModem::Init(void) {
 }
 /*******************************************************************************/
 
-bool CModem::connect(bool useDns) {
+bool CModem::initIP(bool useDns) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
   u08 rc = 0;
   u08 c;
 
   if (rc > 4)
+    rc++;
     return false;
   if (!HandleAtCmd("AT+CGATT=1\r", AT_OK))
     goto retry;
   if (!HandleAtCmd("AT+CGDCONT=1,\"IP\",\"internet\"\r", AT_OK))
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CSTT=\"internet\",\"\",\"\"\r"));
-  if (!HandleAtCmd(txcmd, AT_OK))
-    goto retry;
-//  if (!HandleAtCmd("AT+CIPSRIP=0\r", AT_OK))
-//    goto retry;
+  HandleAtCmd(txcmd, AT_OK);
   if (usedns) {
     if (!HandleAtCmd("AT+CDNSORIP=1\r", AT_OK))
       goto retry;
@@ -220,11 +218,9 @@ bool CModem::connect(bool useDns) {
     goto term;
 
   strcpy_P(txcmd, PSTR("AT+CIICR\r"));
-  //HandleAtCmd(txcmd, AT_OK);
   if (!HandleAtCmd(txcmd, AT_OK))
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CIFSR\r"));
-  //HandleAtCmd(txcmd, AT_OK);
   if (!HandleAtCmd(txcmd, AT_IP))
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CLPORT=\"TCP\",\""));
@@ -232,14 +228,6 @@ bool CModem::connect(bool useDns) {
   strcat(txcmd, "\"\r");
   if (!HandleAtCmd(txcmd, AT_OK))
     goto retry;
-  strcpy(txcmd, "AT+CIPSTART=\"TCP\",\"");
-  strcat(txcmd, serverIP);
-  strcat(txcmd, "\",\"");
-  strcat(txcmd, port);
-  strcat(txcmd, "\"\r");
-  if (!HandleAtCmd(txcmd, AT_CONNECT))
-    goto retry;
-  DbgUart.sendStr("MODEM CONNECTED!!");
   return true;
 
   term: while (1) {
@@ -254,6 +242,16 @@ bool CModem::connect(bool useDns) {
   }
 
 }
+/*******************************************************************************/
+bool CModem::strcpy(txcmd, "AT+CIPSTART=\"TCP\",\"");
+strcat(txcmd, serverIP);
+strcat(txcmd, "\",\"");
+strcat(txcmd, port);
+strcat(txcmd, "\"\r");
+if (!HandleAtCmd(txcmd, AT_CONNECT))
+  goto retry;
+DbgUart.sendStr("MODEM CONNECTED!!");
+
 /*******************************************************************************/
 void CModem::ServerSetIP(c08* _IP, c08 *_port, bool _usedns) {
   usedns = _usedns;
