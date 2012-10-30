@@ -203,34 +203,34 @@ bool CModem::initIP(bool useDns) {
     return false;
   }
   rc++;
-  if (!HandleAtCmd("AT+CGATT=1\r", AT_OK), 2500)
+  if (!HandleAtCmd("AT+CGATT=1\r", AT_OK, 2500))
     goto retry;
-  if (!HandleAtCmd("AT+CGDCONT=1,\"IP\",\"internet\"\r", AT_OK), 2500)
+  if (!HandleAtCmd("AT+CGDCONT=1,\"IP\",\"internet\"\r", AT_OK))
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CSTT=\"internet\",\"\",\"\"\r"));
   HandleAtCmd(txcmd, AT_OK, 2500);
   if (usedns) {
-    if (!HandleAtCmd("AT+CDNSORIP=1\r", AT_OK), 2500)
+    if (!HandleAtCmd("AT+CDNSORIP=1\r", AT_OK))
       goto retry;
     strcpy_P(txcmd, "AT+CDNSCFG=\"");
     strcat(txcmd, DYNDNS_IP);
     strcat_P(txcmd, "\"\r");
-    if (!HandleAtCmd(txcmd, AT_OK), 2500)
+    if (!HandleAtCmd(txcmd, AT_OK))
       goto retry;
   } else {
-    if (!HandleAtCmd("AT+CDNSORIP=0\r", AT_OK), 2500)
+    if (!HandleAtCmd("AT+CDNSORIP=0\r", AT_OK))
       goto retry;
   }
   strcpy_P(txcmd, PSTR("AT+CIICR\r"));
-  if (!HandleAtCmd(txcmd, AT_OK), 2500)
+  if (!HandleAtCmd(txcmd, AT_OK, 2500))
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CIFSR\r"));
-  if (!HandleAtCmd(txcmd, AT_IP), 2500)
+  if (!HandleAtCmd(txcmd, AT_IP))
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CLPORT=\"TCP\",\""));
   strcat(txcmd, port);
   strcat(txcmd, "\"\r");
-  if (!HandleAtCmd(txcmd, AT_OK), 2500)
+  if (!HandleAtCmd(txcmd, AT_OK))
     goto retry;
   return true;
 }
@@ -243,7 +243,7 @@ bool CModem::connect(void) {
   strcat(txcmd, "\",\"");
   strcat(txcmd, port);
   strcat(txcmd, "\"\r");
-  if (!HandleAtCmd(txcmd, AT_CONNECT))
+  if (!HandleAtCmd(txcmd, AT_CONNECT,2500))
     return false;
   return true;
 }

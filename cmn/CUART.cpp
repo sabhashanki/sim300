@@ -11,8 +11,6 @@
 #include "iopins.h"
 #include "common.h"
 
-
-
 /****************************************************************************************/
 #ifndef UDR0
 #define UCSR0A UCSRA
