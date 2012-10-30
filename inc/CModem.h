@@ -5,6 +5,7 @@
 #include <avr/eeprom.h>
 #include "common.h"
 #include "CUART.h"
+#include "fifo.h"
 
 //namespace CMODEM
 //{
@@ -18,6 +19,10 @@
 typedef enum {
   ERR_NONE, ERR_NO_SIMCARD, ERR_PIN_ON_SIMCARD
 } eMdmError;
+//*****************************************************************************
+typedef enum {
+  SOCK_CLOSED, SOCK_INIT, SOCK_CLOSE_WAIT, SOCK_ESTABLISHED
+} eSocketState;
 //*****************************************************************************
 typedef enum {
   START = 1, SEND, RETRY,
@@ -95,7 +100,7 @@ typedef struct {
 //*****************************************************************************
 class CModem {
   private:
-
+    Tfifo<u08> rxFifo;
     eMdmState mdmState;
     eCmdState cmdState;
     eMdmState failState;
@@ -128,6 +133,7 @@ class CModem {
     bool PowerOn(void);
     void clearTimer(void);
   public:
+    eSocketState ss;
     CUART *pUart;
     u08 simcard_ok;
     u08 signal_ok;
@@ -155,7 +161,7 @@ class CModem {
     eMdmState GetStateModem(void);
     bool GetSignalQuality(void);
     bool SendSMS(char *PhoneNumber, char *Message);
-    bool DataToServer(c08* dat);
+    bool send(u08* dat, u16 len);
     void ServerSetIP(c08* _IP, c08 *_port, bool _usedns);
     void GetUnSolicited(void);
 };

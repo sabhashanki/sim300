@@ -29,21 +29,21 @@ bool CServer::SetTagInRange(u32 tagNumber) {
 
   c08 strToServer[MAX_SERVER_STR_LEN];
   CompileStr(strToServer, tagNumber, GAINED);
-  return (modem->DataToServer(strToServer));
+  return (modem->send(strToServer));
 }
 
 bool CServer::SetTagOutRange(u32 tagNumber) {
 
   c08 strToServer[MAX_SERVER_STR_LEN];
   CompileStr(strToServer, tagNumber, LOST);
-  return (modem->DataToServer(strToServer));
+  return (modem->send(strToServer));
 }
 
 bool CServer::SetTagDuress(u32 tagNumber) {
 
   c08 strToServer[MAX_SERVER_STR_LEN];
   CompileStr(strToServer, tagNumber, DURESS);
-  return (modem->DataToServer(strToServer));
+  return (modem->send(strToServer));
 }
 
 bool CServer::CompileStr(c08* strToServer, u32 tagNumber, eEvent Event) {

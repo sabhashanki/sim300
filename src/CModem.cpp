@@ -71,6 +71,8 @@ CModem::CModem(CUART * _pUart) {
   smsrx = false;
   smstx_en = true;
   gprsrx = false;
+  ss = SOCK_CLOSED;
+  rxFifo.setBufSize(255);
 }
 /*******************************************************************************/
 bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
@@ -272,16 +274,16 @@ void CModem::ServerSetIP(c08* _IP, c08 *_port, bool _usedns) {
 }
 
 /*******************************************************************************/
-bool CModem::DataToServer(c08* dat) {
+bool CModem::send(u08* dat, u16 len) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
-  if (mdmState == MDM_READY&& connect_ok == true && registered_ok == true && simcard_ok
-  == true && signal_ok == true) {
-    strcpy(txcmd, dat);
-    mdmState = MDM_IP_SEND;
-    return true;
-  } else {
-    return false;
+  if (ss == SOCK_ESTABLISHED) {
+    if (HandleAtCmd("AT+CIPSEND\r", AT_RDY)) {
+      pUart->send((c08*) dat, len);
+      pUart->sendStr_P(PSTR("\x1A\r"));
+      return true;
+    }
   }
+  return false;
 }
 /*******************************************************************************/
 bool CModem::SendSMS(char *PhoneNumber, char *Message) {
@@ -404,7 +406,7 @@ void CModem::setNextState(eMdmState nextState) {
 //}
 
 /*******************************************************************************/
-//void CModem::Service(void) {
+void CModem::Service(void) {
 //  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 //  {
 //    atomicTime = isr_timer;
@@ -770,7 +772,8 @@ void CModem::setNextState(eMdmState nextState) {
 //    default:
 //      break;
 //  }
-//}
+}
+
 bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
   char expRsp[MDM_MAX_RX_CMD_LEN];
   char rxRsp[MDM_MAX_RX_CMD_LEN];
@@ -797,60 +800,61 @@ bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
   return false;
 }
 /*******************************************************************************/
-//void CModem::GetUnSolicited(void) {
-//  char *pstr = 0;
-//  char *start = 0;
-//  char *end = 0;
-//  u08 len;
-//  if (pUart->peek(rxmsg)) {
-//
-//    if (strstr_P(rxmsg, PSTR("CONNECT FAIL"))) {
-//      mdmState = MDM_IPSHUTDOWN;
-//    }
-//    if (strstr_P(rxmsg, PSTR("+CMTI: \"SM\","))) {
-//      mdmState = MDM_READ_SMS;
-//      pstr = strchr(rxmsg, ',');
-//      if (pstr) {
-//        pstr++;
-//        if (strlen(pstr) > 10) {
-//          pstr[9] = 0;
-//          strncpy(sms.nr, pstr, 10);
-//        } else {
-//          strcpy(sms.nr, pstr);
-//        }
-//      } else {
-//        strcpy(sms.nr, "0");
-//      }
-//      pUart->clearRx();
-//    }
-//    if (strstr_P(rxmsg, PSTR("+CME"))) {
-//      mdmState = MDM_READY;
-//      pUart->clearRx();
-//    }
-//    pstr = strstr_P(rxmsg, PSTR("+IPD"));
-//    if (pstr != 0 && gprsrx == false) {
-////DbgUart.sendStr(rxmsg);
-//      start = strchr(rxmsg, '*');
-//      if (start) {
-//        end = strchr(rxmsg, '#');
-//        if (end) {
-//          //CLR_RTS();
-//          len = end - start;
-//          memcpy(gprsraw, start, len);
-//          DbgUart.sendStr_P(PSTR("\n\r ==============RECEIVED STRING=============\n\r"));
-//          DbgUart.sendStr((u08*) gprsraw);
-//          //pUart->receive((u08*)NULL,(end-pstr));
-//          DbgUart.sendStr_P(PSTR("\n\r=============== END =======================\n\r"));
-//
-//          gprsrx = true;
-//          mdmState = MDM_READY;
-//          pUart->clearRx();
-//        }
-//      }
-//    }
-//    //SET_RTS();
-//  }
-//}
+void CModem::GetUnSolicited(void) {
+  char *pstr = 0;
+  char *start = 0;
+  char *end = 0;
+  u08 rxmsg[MDM_MAX_RX_CMD_LEN];
+  u08 len;
+  if (pUart->peek((c08*)rxmsg)) {
+
+    if (strstr_P((c08*)rxmsg, PSTR("CONNECT FAIL"))) {
+      mdmState = MDM_IPSHUTDOWN;
+    }
+    if (strstr_P((c08*)rxmsg, PSTR("+CMTI: \"SM\","))) {
+      mdmState = MDM_READ_SMS;
+      pstr = strchr((c08*)rxmsg, ',');
+      if (pstr) {
+        pstr++;
+        if (strlen(pstr) > 10) {
+          pstr[9] = 0;
+          strncpy(sms.nr, pstr, 10);
+        } else {
+          strcpy(sms.nr, pstr);
+        }
+      } else {
+        strcpy(sms.nr, "0");
+      }
+      pUart->clearRx();
+    }
+    if (strstr_P((c08*)rxmsg, PSTR("+CME"))) {
+      mdmState = MDM_READY;
+      pUart->clearRx();
+    }
+    pstr = strstr_P((c08*)rxmsg, PSTR("+IPD"));
+    if (pstr != 0 && gprsrx == false) {
+//DbgUart.sendStr(rxmsg);
+      start = strchr((c08*)rxmsg, '*');
+      if (start) {
+        end = strchr((c08*)rxmsg, '#');
+        if (end) {
+          //CLR_RTS();
+          len = end - start;
+          memcpy(gprsraw, start, len);
+          DbgUart.sendStr_P(PSTR("\n\r ==============RECEIVED STRING=============\n\r"));
+          DbgUart.sendStr((c08*) gprsraw);
+          //pUart->receive((u08*)NULL,(end-pstr));
+          DbgUart.sendStr_P(PSTR("\n\r=============== END =======================\n\r"));
+
+          gprsrx = true;
+          mdmState = MDM_READY;
+          pUart->clearRx();
+        }
+      }
+    }
+    //SET_RTS();
+  }
+}
 /*******************************************************************************/
 bool CModem::PowerOff(void) {
   MDM_PWR_KEY_ON();
