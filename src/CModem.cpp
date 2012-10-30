@@ -74,14 +74,21 @@ CModem::CModem(CUART * _pUart) {
 }
 /*******************************************************************************/
 bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
+  u16 cnt = 0;
+  u08 d;
   c08 rxRsp[MDM_MAX_RX_CMD_LEN];
   memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
   pUart->clear();
   DbgUart.uprintf("\r\nCmd: %s", cmd);
   pUart->sendStr(cmd);
-  _delay_ms(del);
+  while (cnt < 10) {
+    cnt++;
+    _delay_ms(del / 10);
+    pUart->peek(rxRsp);
+    if (strstr((const char*) rxRsp, (c08*) _expRsp))
+      break;
+  }
   pUart->receive((u08*) rxRsp);
-  DbgUart.uprintf("\r\nRX: %s", rxRsp);
   if (strstr((const char*) rxRsp, (c08*) _expRsp)) {
     return true;
   }
@@ -243,7 +250,7 @@ bool CModem::connect(void) {
   strcat(txcmd, "\",\"");
   strcat(txcmd, port);
   strcat(txcmd, "\"\r");
-  if (!HandleAtCmd(txcmd, AT_CONNECT,2500))
+  if (!HandleAtCmd(txcmd, AT_CONNECT, 2500))
     return false;
   return true;
 }
