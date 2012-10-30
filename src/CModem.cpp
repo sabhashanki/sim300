@@ -44,6 +44,7 @@ const char AT_CONNECT[] = "CONNECT OK";
 const char AT_ERROR[] = "ERROR";
 const char AT_DATA[] = "\r\n";
 const char SIM_RDY[] = "+CPIN: READY";
+const char AT_IP_CLOSE[] = "CLOSE OK";
 
 extern CUART DbgUart;
 /*******************************************************************************/
@@ -72,13 +73,13 @@ CModem::CModem(CUART * _pUart) {
   gprsrx = false;
 }
 /*******************************************************************************/
-bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp) {
+bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
   c08 rxRsp[MDM_MAX_RX_CMD_LEN];
   memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
   pUart->clear();
   DbgUart.uprintf("\r\nCmd: %s", cmd);
   pUart->sendStr(cmd);
-  _delay_ms(2100);
+  _delay_ms(del);
   pUart->receive((u08*) rxRsp);
   DbgUart.uprintf("\r\nRX: %s", rxRsp);
   if (strstr((const char*) rxRsp, (c08*) _expRsp)) {
@@ -157,6 +158,12 @@ bool CModem::checkRegistration() {
 
 /*******************************************************************************/
 bool CModem::initModem(void) {
+  u08 rc = 0;
+
+  if (rc > 4) {
+    return false;
+  }
+  rc++;
   PowerOff();
   PowerOn();
   CLR_DTR();
@@ -169,7 +176,7 @@ bool CModem::initModem(void) {
   while (GET_CTS_STATUS()) {
     _delay_ms(5);
   }
-  _delay_ms(6000);
+  _delay_ms(5000);
   retry: HandleAtCmd("ATE0\r", AT_NONE);
   if (!HandleAtCmd("AT\r", AT_OK))
     goto retry;
@@ -192,65 +199,63 @@ bool CModem::initIP(bool useDns) {
   u08 rc = 0;
   u08 c;
 
-  if (rc > 4)
-    rc++;
+  retry: if (rc > 4) {
     return false;
-  if (!HandleAtCmd("AT+CGATT=1\r", AT_OK))
+  }
+  rc++;
+  if (!HandleAtCmd("AT+CGATT=1\r", AT_OK), 2500)
     goto retry;
-  if (!HandleAtCmd("AT+CGDCONT=1,\"IP\",\"internet\"\r", AT_OK))
+  if (!HandleAtCmd("AT+CGDCONT=1,\"IP\",\"internet\"\r", AT_OK), 2500)
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CSTT=\"internet\",\"\",\"\"\r"));
-  HandleAtCmd(txcmd, AT_OK);
+  HandleAtCmd(txcmd, AT_OK, 2500);
   if (usedns) {
-    if (!HandleAtCmd("AT+CDNSORIP=1\r", AT_OK))
+    if (!HandleAtCmd("AT+CDNSORIP=1\r", AT_OK), 2500)
       goto retry;
     strcpy_P(txcmd, "AT+CDNSCFG=\"");
     strcat(txcmd, DYNDNS_IP);
     strcat_P(txcmd, "\"\r");
-    if (!HandleAtCmd(txcmd, AT_OK))
+    if (!HandleAtCmd(txcmd, AT_OK), 2500)
       goto retry;
   } else {
-    if (!HandleAtCmd("AT+CDNSORIP=0\r", AT_OK))
+    if (!HandleAtCmd("AT+CDNSORIP=0\r", AT_OK), 2500)
       goto retry;
   }
-  retry: rc++;
-  if (rc > 4)
-    goto term;
-
   strcpy_P(txcmd, PSTR("AT+CIICR\r"));
-  if (!HandleAtCmd(txcmd, AT_OK))
+  if (!HandleAtCmd(txcmd, AT_OK), 2500)
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CIFSR\r"));
-  if (!HandleAtCmd(txcmd, AT_IP))
+  if (!HandleAtCmd(txcmd, AT_IP), 2500)
     goto retry;
   strcpy_P(txcmd, PSTR("AT+CLPORT=\"TCP\",\""));
   strcat(txcmd, port);
   strcat(txcmd, "\"\r");
-  if (!HandleAtCmd(txcmd, AT_OK))
+  if (!HandleAtCmd(txcmd, AT_OK), 2500)
     goto retry;
   return true;
-
-  term: while (1) {
-    if (DbgUart.rxnum() > 0) {
-      DbgUart.receive(&c, 1);
-      pUart->send((c08*) &c, 1);
-    }
-    if (pUart->rxnum() > 0) {
-      pUart->receive(&c, 1);
-      DbgUart.send((c08*) &c, 1);
-    }
-  }
-
 }
+
 /*******************************************************************************/
-bool CModem::strcpy(txcmd, "AT+CIPSTART=\"TCP\",\"");
-strcat(txcmd, serverIP);
-strcat(txcmd, "\",\"");
-strcat(txcmd, port);
-strcat(txcmd, "\"\r");
-if (!HandleAtCmd(txcmd, AT_CONNECT))
-  goto retry;
-DbgUart.sendStr("MODEM CONNECTED!!");
+bool CModem::connect(void) {
+  c08 txcmd[MDM_MAX_TX_CMD_LEN];
+  strcpy(txcmd, "AT+CIPSTART=\"TCP\",\"");
+  strcat(txcmd, serverIP);
+  strcat(txcmd, "\",\"");
+  strcat(txcmd, port);
+  strcat(txcmd, "\"\r");
+  if (!HandleAtCmd(txcmd, AT_CONNECT))
+    return false;
+  return true;
+}
+
+/*******************************************************************************/
+bool CModem::disconnect(void) {
+  c08 txcmd[MDM_MAX_TX_CMD_LEN];
+  strcpy(txcmd, "AT+CIPCLOSE\r");
+  if (!HandleAtCmd(txcmd, AT_IP_CLOSE))
+    return false;
+  return true;
+}
 
 /*******************************************************************************/
 void CModem::ServerSetIP(c08* _IP, c08 *_port, bool _usedns) {

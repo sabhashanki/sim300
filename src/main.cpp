@@ -53,7 +53,6 @@ int main(void) {
   //Timer.attach(TimeTicker);
   sei();
 
-
   DbgUart.sendStr_P(PSTR("\x1B[2J")); //Clear Screen
   DbgUart.sendStr_P(PSTR("\x1B[0;0H")); //Position Cursor
   //while(1){
@@ -70,8 +69,15 @@ int main(void) {
     }
     //Rfid.Service();
     //Controller.Service();
-    Modem.initModem();
-    Modem.initIP(false);
+    if (Modem.initModem()) {
+      if (Modem.initIP(false)) {
+        redo: if (Modem.connect()) {
+          if (Modem.disconnect()) {
+            goto redo;
+          }
+        }
+      }
+    }
 
     if (time > 200000) {
       time = 0;

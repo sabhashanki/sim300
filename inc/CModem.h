@@ -16,9 +16,7 @@
 
 //*****************************************************************************
 typedef enum {
-  ERR_NONE ,
-  ERR_NO_SIMCARD,
-  ERR_PIN_ON_SIMCARD
+  ERR_NONE, ERR_NO_SIMCARD, ERR_PIN_ON_SIMCARD
 } eMdmError;
 //*****************************************************************************
 typedef enum {
@@ -119,17 +117,17 @@ class CModem {
     c08 *pRx;
 
     u08 error_cnt;
-    bool GetAtResp(char* rspStr,c08* rxRsp = NULL);
+    bool GetAtResp(char* rspStr, c08* rxRsp = NULL);
     void StartupTask(void);
     void ConfigureTask(void);
-    bool HandleAtCmd(c08* cmd, const char* _expRsp);
+    bool HandleAtCmd(c08* cmd, const char* _expRsp, u16 del = 200);
     bool checkSignalStrength();
     bool checkSIM();
     bool checkRegistration();
     bool PowerOff(void);
     bool PowerOn(void);
     void clearTimer(void);
-    public:
+  public:
     CUART *pUart;
     u08 simcard_ok;
     u08 signal_ok;
@@ -147,6 +145,8 @@ class CModem {
     CModem(CUART * _pUart);
     bool initModem(void);
     bool initIP(bool useDns);
+    bool connect(void);
+    bool disconnect(void);
     void Service(void);
     bool SIMCheckReady(void);
     void UpdateMdmStatus(void);
@@ -156,7 +156,7 @@ class CModem {
     bool GetSignalQuality(void);
     bool SendSMS(char *PhoneNumber, char *Message);
     bool DataToServer(c08* dat);
-    void ServerSetIP(c08* _IP,c08 *_port,bool _usedns);
+    void ServerSetIP(c08* _IP, c08 *_port, bool _usedns);
     void GetUnSolicited(void);
-  };
+};
 #endif
