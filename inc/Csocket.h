@@ -43,7 +43,7 @@ class Csocket: public Cserial {
     bool autoclose;
     CModem* modem;
   public:
-    Csocket(CModem* modem, u16 port, sIP dstIP, u16 bufSize = 255);
+    Csocket(CModem* modem, u16 bufSize = 255);
     void service(void);
     u16 send(u08* buffer, u16 nBytes);
     u16 receive(u08* buffer, u16 nBytes);

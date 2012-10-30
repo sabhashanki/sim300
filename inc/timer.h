@@ -9,8 +9,8 @@
 //  Copyright: 2012 Firmlogik (Pty) Ltd 2012.  All rights reserved.
 //        URL: http://www.firmlogik.co.za
 /****************************************************************************************/
-#ifndef CTIMER_H_
-#define CTIMER_H_
+#ifndef TIMER_H_
+#define TIMER_H_
 
 #include <avr/io.h>
 #include "types.h"

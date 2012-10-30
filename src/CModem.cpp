@@ -254,6 +254,7 @@ bool CModem::connect(void) {
   strcat(txcmd, "\"\r");
   if (!HandleAtCmd(txcmd, AT_CONNECT, 2500))
     return false;
+  ss = SOCK_ESTABLISHED;
   return true;
 }
 
@@ -263,6 +264,7 @@ bool CModem::disconnect(void) {
   strcpy(txcmd, "AT+CIPCLOSE\r");
   if (!HandleAtCmd(txcmd, AT_IP_CLOSE))
     return false;
+  ss = SOCK_CLOSED;
   return true;
 }
 
@@ -321,18 +323,6 @@ void CModem::UpdateMdmStatus(void) {
   }
 }
 
-/*
- bool CModem::SIMSetPin(c08* pin) {
- if (mdmState == MDM_READY) {
- strcpy(pincode, pin);
- mdmState = MDM_SET_SIMCARD_PIN;
- return true;
- } else {
- return false;
- }
- }
- */
-
 /*******************************************************************************/
 eMdmState CModem::GetStateModem(void) {
   return mdmState;
@@ -343,6 +333,77 @@ void CModem::setNextState(eMdmState nextState) {
   mdmState = nextState;
 //}
 }
+
+bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
+  char expRsp[MDM_MAX_RX_CMD_LEN];
+  char rxRsp[MDM_MAX_RX_CMD_LEN];
+  memset(expRsp, 0, MDM_MAX_RX_CMD_LEN);
+  memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
+  u08 cnt = 0;
+  u08 len;
+  strcpy((c08*) expRsp, _expRsp);
+  len = strlen((c08*) expRsp);
+  while (pUart->rxnum() < len) {
+    _delay_ms(1);
+//    if ((cnt++) > 200)
+//      return false;
+  }
+  len = pUart->rxnum();
+  pUart->receive((u08*) rxRsp, len);
+  DbgUart.sendStr(rxRsp);
+  if (_rxRsp) {
+    strcpy((char*) _rxRsp, rxRsp);
+  }
+  if (strstr((const char*) rxRsp, (c08*) expRsp)) {
+    return true;
+  }
+  return false;
+}
+/*******************************************************************************/
+void CModem::service(void) {
+  c08* pstr = 0;
+  c08* start = 0;
+  c08* end = 0;
+  u08 rxmsg[MDM_MAX_RX_CMD_LEN];
+  u08 len;
+  if (pUart->peek((c08*) rxmsg)) {
+    pstr = strstr_P((c08*) rxmsg, PSTR("+IPD"));
+    if (pstr != 0 && gprsrx == false) {
+      start = strchr((c08*) rxmsg, '*');
+      if (start) {
+        end = strchr((c08*) rxmsg, '#');
+        if (end) {
+          len = end - start;
+          rxFifo.add((u08*) start, len);
+          pUart->clearRx();
+        }
+      }
+    }
+  }
+}
+/*******************************************************************************/
+bool CModem::PowerOff(void) {
+  MDM_PWR_KEY_ON();
+  _delay_ms(2000);
+  MDM_PWR_KEY_OFF();
+  _delay_ms(2000);
+  MDM_PWR_FET_OFF();
+  _delay_ms(500);
+  return true;
+}
+
+/*******************************************************************************/
+bool CModem::PowerOn(void) {
+  MDM_PWR_FET_ON();
+  _delay_ms(200);
+  MDM_PWR_KEY_ON();
+  _delay_ms(2000);
+  MDM_PWR_KEY_OFF();
+  _delay_ms(2000);
+  return true;
+}
+/*******************************************************************************/
+
 ///*******************************************************************************/
 //bool CModem::Init(void) {
 //  u08 ret;
@@ -404,9 +465,8 @@ void CModem::setNextState(eMdmState nextState) {
 //  }
 //  return ret;
 //}
-
 /*******************************************************************************/
-void CModem::Service(void) {
+//void CModem::Service(void) {
 //  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 //  {
 //    atomicTime = isr_timer;
@@ -772,108 +832,17 @@ void CModem::Service(void) {
 //    default:
 //      break;
 //  }
-}
+//}
 
-bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
-  char expRsp[MDM_MAX_RX_CMD_LEN];
-  char rxRsp[MDM_MAX_RX_CMD_LEN];
-  memset(expRsp, 0, MDM_MAX_RX_CMD_LEN);
-  memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
-  u08 cnt = 0;
-  u08 len;
-  strcpy((c08*) expRsp, _expRsp);
-  len = strlen((c08*) expRsp);
-  while (pUart->rxnum() < len) {
-    _delay_ms(1);
-//    if ((cnt++) > 200)
-//      return false;
-  }
-  len = pUart->rxnum();
-  pUart->receive((u08*) rxRsp, len);
-  DbgUart.sendStr(rxRsp);
-  if (_rxRsp) {
-    strcpy((char*) _rxRsp, rxRsp);
-  }
-  if (strstr((const char*) rxRsp, (c08*) expRsp)) {
-    return true;
-  }
-  return false;
-}
-/*******************************************************************************/
-void CModem::GetUnSolicited(void) {
-  char *pstr = 0;
-  char *start = 0;
-  char *end = 0;
-  u08 rxmsg[MDM_MAX_RX_CMD_LEN];
-  u08 len;
-  if (pUart->peek((c08*)rxmsg)) {
+  /*
+   bool CModem::SIMSetPin(c08* pin) {
+   if (mdmState == MDM_READY) {
+   strcpy(pincode, pin);
+   mdmState = MDM_SET_SIMCARD_PIN;
+   return true;
+   } else {
+   return false;
+   }
+   }
+   */
 
-    if (strstr_P((c08*)rxmsg, PSTR("CONNECT FAIL"))) {
-      mdmState = MDM_IPSHUTDOWN;
-    }
-    if (strstr_P((c08*)rxmsg, PSTR("+CMTI: \"SM\","))) {
-      mdmState = MDM_READ_SMS;
-      pstr = strchr((c08*)rxmsg, ',');
-      if (pstr) {
-        pstr++;
-        if (strlen(pstr) > 10) {
-          pstr[9] = 0;
-          strncpy(sms.nr, pstr, 10);
-        } else {
-          strcpy(sms.nr, pstr);
-        }
-      } else {
-        strcpy(sms.nr, "0");
-      }
-      pUart->clearRx();
-    }
-    if (strstr_P((c08*)rxmsg, PSTR("+CME"))) {
-      mdmState = MDM_READY;
-      pUart->clearRx();
-    }
-    pstr = strstr_P((c08*)rxmsg, PSTR("+IPD"));
-    if (pstr != 0 && gprsrx == false) {
-//DbgUart.sendStr(rxmsg);
-      start = strchr((c08*)rxmsg, '*');
-      if (start) {
-        end = strchr((c08*)rxmsg, '#');
-        if (end) {
-          //CLR_RTS();
-          len = end - start;
-          memcpy(gprsraw, start, len);
-          DbgUart.sendStr_P(PSTR("\n\r ==============RECEIVED STRING=============\n\r"));
-          DbgUart.sendStr((c08*) gprsraw);
-          //pUart->receive((u08*)NULL,(end-pstr));
-          DbgUart.sendStr_P(PSTR("\n\r=============== END =======================\n\r"));
-
-          gprsrx = true;
-          mdmState = MDM_READY;
-          pUart->clearRx();
-        }
-      }
-    }
-    //SET_RTS();
-  }
-}
-/*******************************************************************************/
-bool CModem::PowerOff(void) {
-  MDM_PWR_KEY_ON();
-  _delay_ms(2000);
-  MDM_PWR_KEY_OFF();
-  _delay_ms(2000);
-  MDM_PWR_FET_OFF();
-  _delay_ms(500);
-  return true;
-}
-
-/*******************************************************************************/
-bool CModem::PowerOn(void) {
-  MDM_PWR_FET_ON();
-  _delay_ms(200);
-  MDM_PWR_KEY_ON();
-  _delay_ms(2000);
-  MDM_PWR_KEY_OFF();
-  _delay_ms(2000);
-  return true;
-}
-/*******************************************************************************/

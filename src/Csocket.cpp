@@ -28,7 +28,7 @@ using namespace CSOCKET;
 //u08 debugClose = false;
 //u08 debugSend = true;
 /****************************************************************************************/
-Csocket::Csocket(CModem* _modem, u16 port, sIP dstIP, u16 _bufSize) {
+Csocket::Csocket(CModem* _modem, u16 _bufSize) {
   modem = _modem;
   this->socketNr = socketNr;
   this->port = port;
@@ -38,7 +38,7 @@ Csocket::Csocket(CModem* _modem, u16 port, sIP dstIP, u16 _bufSize) {
   rxOverflowCnt = 0;
   txBusy = false;
   print = true;
-  dst = dstIP;
+  //dst = dstIP;
   signal.setPeriod(1 / TICK_BASE);
   scheduler.attach(&signal);
   autoclose = false;

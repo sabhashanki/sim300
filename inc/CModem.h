@@ -149,11 +149,17 @@ class CModem {
     c08 gprsraw[MDM_MAX_RX_CMD_LEN];
     u08 gprsrx;
     CModem(CUART * _pUart);
+    u16 rxnum(void) {
+      return rxFifo.used();
+    }
+    bool receive(u08* buf, u08 len = 0) {
+      rxFifo.remove(buf, len);
+    }
     bool initModem(void);
     bool initIP(bool useDns);
     bool connect(void);
     bool disconnect(void);
-    void Service(void);
+    void service(void);
     bool SIMCheckReady(void);
     void UpdateMdmStatus(void);
     bool SIMSetPin(c08* pin);

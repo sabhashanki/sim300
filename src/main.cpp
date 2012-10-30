@@ -16,10 +16,11 @@
 #include "CTimer.h"
 #include "CUART.h"
 #include "CRfid.h"
-#include "CI2C.h"
-#include "Crtc.h"
+#include "i2c.h"
+//#include "Crtc.h"
 #include "CServer.h"
 #include "CController.h"
+#include "Csocket.h"
 /****************************************************************************************/
 static volatile u32 isr_time = 0;
 static volatile u32 time = 0;
@@ -32,17 +33,14 @@ void TimeTicker(void);
 //CTimer Timer(0, TIMER_CLK_DIV8);
 CUART DbgUart(0, 115200, 255);
 CUART ModemUart(2, 115200, 1024);
-//CModem Modem(&ModemUart,"cloete.vm.bytemark.co.uk","55555");
 CModem Modem(&ModemUart);
-//CModem Modem(&ModemUart,"xdm.dyndns.org","55555",true);
-//CModem Modem(&ModemUart,"www.google.com","80");
-//CModem Modem(&ModemUart,"41.125.130.119","80",false);
-CI2C i2c;
-Crtc rtc(&i2c, 0xD0);
-CServer Server(&Modem);
+Csocket socket(&Modem);
+//Ci2c i2c;
+//Crtc rtc(&i2c, 0xD0);
+//CServer Server(&Modem);
 //CRFID Rfid(&RfidUart, 16, &Server);
 //CController Controller(&Rfid, &Modem, &Server);
-sTimeDate rtc_time;
+//sTimeDate rtc_time;
 /****************************************************************************************/
 int main(void) {
   u08 dat[128];
@@ -61,50 +59,19 @@ int main(void) {
   //}
   //Controller.Setup();
   Modem.ServerSetIP((c08*) "41.181.16.116", (c08*) "61000", false);
+  if (!Modem.initModem())
+    goto error;
+  if (!Modem.initIP(false))
+    goto error;
 
   while (1) {
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-      time = isr_time;
-    }
-    //Rfid.Service();
-    //Controller.Service();
-    if (Modem.initModem()) {
-      if (Modem.initIP(false)) {
-        redo: if (Modem.connect()) {
-          if (Modem.disconnect()) {
-            goto redo;
-          }
-        }
-      }
-    }
-
-    if (time > 200000) {
-      time = 0;
-
-      ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-      {
-        isr_time = 0;
-      }
-      LED_3_TOGGLE();
-      if (Modem.simcard_ok) {
-        LED_0_TOGGLE();
-      } else {
-        LED_0_OFF();
-      }
-      if (Modem.signal_ok) {
-        LED_1_TOGGLE();
-      } else {
-        LED_1_OFF();
-      }
-      if (Modem.connect_ok) {
-        LED_2_TOGGLE();
-      } else {
-        LED_2_OFF();
-      }
-    }
+    Modem.service();
+    socket.service();
+    return 0;
   }
-  return 0;
+  error: while (1) {
+
+  }
 }
 
 void TimeTicker(void) {
