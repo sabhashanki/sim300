@@ -1,11 +1,11 @@
-#ifndef CNETWORK_H_
-#define CNETWORK_H_
+#ifndef NETWORK_H_
+#define NETWORK_H_
 /****************************************************************************************/
 #include "avrlibtypes.h"
 #include "nodeid.h"
 #include "serial.h"
 /****************************************************************************************/
-namespace Cnetwork {
+namespace NS_CNETWORK {
   typedef enum {
     T_BOOL = 0, T_CHAR = 1, T_UCHAR = 2, T_STRING = 11
   } eDataTyep;
@@ -80,7 +80,10 @@ namespace Cnetwork {
         *val = (htons(&tmpL) | (u32) htons(&tmpR) << 16);
         return *val;
       }
+      void sendTestPkt();
+      /****************************************************************************************/
   };
-/****************************************************************************************/
 }
+using namespace NS_CNETWORK;
+
 #endif

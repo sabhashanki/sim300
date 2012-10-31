@@ -9,6 +9,7 @@
 #include <avr/eeprom.h>
 #include <util/atomic.h>
 /****************************************************************************************/
+#include "network.h"
 #include "main.h"
 #include "CModem.h"
 #include "common.h"
@@ -32,9 +33,10 @@ void TimeTicker(void);
 /****************************************************************************************/
 //CTimer Timer(0, TIMER_CLK_DIV8);
 CUART DbgUart(0, 115200, 255);
-CUART ModemUart(2, 115200, 1024);
+CUART ModemUart(2, 115200, 255);
 CModem Modem(&ModemUart);
 Csocket socket(&Modem);
+CNetwork server(&socket, 255);
 //Ci2c i2c;
 //Crtc rtc(&i2c, 0xD0);
 //CServer Server(&Modem);
@@ -45,7 +47,7 @@ Csocket socket(&Modem);
 int main(void) {
   u08 dat[128];
   u32 testCnt = 0;
-  //=== Enable the External RAM
+   //=== Enable the External RAM
   //BIT_SET_HI(XMCRA, SRE);
   InitIOPins();
   WDTCSR = 0x00; // Disable Watchdog for now
@@ -68,9 +70,10 @@ int main(void) {
     Modem.service();
     socket.service();
     testCnt++;
-    if (testCnt > 4294967000) {
-      socket.send(dat,30);
+    if (testCnt > 4000000) {
+      socket.send(dat, 30);
       testCnt = 0;
+      server.sendTestPkt();
     }
   }
   error: while (1) {

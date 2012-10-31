@@ -23,8 +23,6 @@
 #include "avrlibtypes.h"
 #include "network.h"
 /****************************************************************************************/
-using namespace Cnetwork;
-/****************************************************************************************/
 #undef DEBUG
 /****************************************************************************************/
 #ifndef WIN32
@@ -160,4 +158,19 @@ void CNetwork::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus*
   binHdr.type = T_UCHAR;
   serial->send((u08*) &binHdr, sizeof(sDataBinHeader));
   serial->send((u08*) status, 1);
+}
+/****************************************************************************************/
+void CNetwork::sendTestPkt() {
+  u08* strID;
+  u08* strGPS;
+  u08* strRFID;
+  eCoverStatus status;
+
+  strcpy((c08*)strID, "1234");
+  strcpy((c08*)strGPS, "1.2 3.4");
+  strcpy((c08*)strRFID, "X8974");
+  status = COVER_OPEN;
+
+  statusUpdate(strID, strGPS, strRFID, &status);
+
 }
