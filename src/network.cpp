@@ -31,29 +31,29 @@
 AnsiString str;
 #endif
 /****************************************************************************************/
-CNetwork::CNetwork(Cserial* serial, u08 size) {
-  this->serial = serial;
+CNetwork::CNetwork(Cserial* _serial, u08 _size) {
+  this->serial = _serial;
   State = STATE_RX_LENGTH;
   time = 0;
   timeLimit = 0;
   payloadSize = 0;
   payload = 0;
   healthy = true;
-  baudRate = this->serial->getBaudRate();
-  setPayloadBufSize(size);
+  baudRate = serial->getBaudRate();
+  setPayloadBufSize(_size);
 }
 /****************************************************************************************/
-CNetwork::CNetwork(Cserial* serial, u08 size, u08 node) {
-  this->serial = serial;
-  this->NodeId = node;
+CNetwork::CNetwork(Cserial* _serial, u08 _size, u08 _node) {
+  this->serial = _serial;
+  this->NodeId = _node;
   State = STATE_RX_LENGTH;
   time = 0;
   timeLimit = 0;
   payloadSize = 0;
   payload = 0;
   healthy = true;
-  baudRate = this->serial->getBaudRate();
-  setPayloadBufSize(size);
+  baudRate = serial->getBaudRate();
+  setPayloadBufSize(_size);
 }
 /****************************************************************************************/
 u08 CNetwork::setPayloadBufSize(u08 size) {

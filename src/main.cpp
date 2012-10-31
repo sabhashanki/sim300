@@ -46,8 +46,8 @@ CNetwork server(&socket, 255);
 /****************************************************************************************/
 int main(void) {
   u08 dat[128];
-  u32 testCnt = 0;
-   //=== Enable the External RAM
+  bool testSend = false;
+  //=== Enable the External RAM
   //BIT_SET_HI(XMCRA, SRE);
   InitIOPins();
   WDTCSR = 0x00; // Disable Watchdog for now
@@ -69,11 +69,9 @@ int main(void) {
   while (1) {
     Modem.service();
     socket.service();
-    testCnt++;
-    if (testCnt > 4000000) {
-      socket.send(dat, 30);
-      testCnt = 0;
+    if (testSend) {
       server.sendTestPkt();
+      testSend = false;
     }
   }
   error: while (1) {
