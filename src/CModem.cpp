@@ -46,7 +46,7 @@ const char AT_DATA[] = "\r\n";
 const char SIM_RDY[] = "+CPIN: READY";
 const char AT_IP_CLOSE[] = "CLOSE OK";
 
-extern CUART DbgUart;
+extern CUART debugUart;
 /*******************************************************************************/
 CModem::CModem(CUART * _pUart) {
   usedns = false;
@@ -80,7 +80,7 @@ bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
   c08 rxRsp[MDM_MAX_RX_CMD_LEN];
   memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
   pUart->clear();
-  DbgUart.uprintf("\r\nCmd: %s", cmd);
+  debugUart.uprintf("\r\nCmd: %s", cmd);
   pUart->sendStr(cmd);
   while (cnt < 10) {
     cnt++;
@@ -359,7 +359,7 @@ bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
   }
   len = pUart->rxnum();
   pUart->rxFIFO.read((u08*) rxRsp, len);
-  DbgUart.sendStr(rxRsp);
+  debugUart.sendStr(rxRsp);
   if (_rxRsp) {
     strcpy((char*) _rxRsp, rxRsp);
   }

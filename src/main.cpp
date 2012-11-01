@@ -34,10 +34,10 @@ using namespace CCONTROLLER;
 void TimeTicker(void);
 /****************************************************************************************/
 //CTimer Timer(0, TIMER_CLK_DIV8);
-CUART DbgUart(0, 115200);
-CUART ModemUart(2, 115200);
-CModem Modem(&ModemUart);
-Csocket socket(&Modem);
+CUART debugUart(0, 115200);
+CUART modemUart(2, 115200);
+CModem modem(&modemUart);
+Csocket socket(&modem);
 CNetwork server(&socket);
 //Ci2c i2c;
 //Crtc rtc(&i2c, 0xD0);
@@ -53,22 +53,22 @@ int main(void) {
   WDTCSR = 0x00; // Disable Watchdog for now
   //Timer.attach(TimeTicker);
   sei();
-  DbgUart.sendStr_P(PSTR("\x1B[2J")); //Clear Screen
-  DbgUart.sendStr_P(PSTR("\x1B[0;0H")); //Position Cursor
+  debugUart.sendStr_P(PSTR("\x1B[2J")); //Clear Screen
+  debugUart.sendStr_P(PSTR("\x1B[0;0H")); //Position Cursor
   //while(1){
-  DbgUart.sendStr_P(PSTR("\n\r  ===== CULLINAN RFID MANAGER V1.5 DEMO ===== \n\r"));
+  debugUart.sendStr_P(PSTR("\n\r  ===== CULLINAN RFID MANAGER V1.5 DEMO ===== \n\r"));
 //  DbgUart.sendStr(rtc.getTimestamp());
   //}
   //Controller.Setup();
-  Modem.ServerSetIP((c08*) "41.181.16.116", (c08*) "61000", false);
-  if (!Modem.initModem())
+  modem.ServerSetIP((c08*) "41.181.16.116", (c08*) "61000", false);
+  if (!modem.initModem())
     goto error;
-  if (!Modem.initIP(false))
+  if (!modem.initIP(false))
     goto error;
 
   while (1) {
     _delay_ms(10);
-    Modem.service();
+    modem.service();
     socket.service();
     if (testSend) {
       server.sendTestPkt();
@@ -86,7 +86,7 @@ void TimeTicker(void) {
   //Rfid.timer += TICKER_PERIOD;
   isr_time += TICKER_PERIOD
   ;
-  Modem.isr_timer += TICKER_PERIOD
+  modem.isr_timer += TICKER_PERIOD
   ;
   //Controller.timer += TICKER_PERIOD;
 }
