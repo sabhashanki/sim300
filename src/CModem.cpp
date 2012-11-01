@@ -288,6 +288,7 @@ bool CModem::send(u08* dat, u16 len) {
 /*******************************************************************************/
 bool CModem::send(Tfifo<u08>* dat) {
   if (ss == SOCK_ESTABLISHED) {
+    pUart->clear();
     if (HandleAtCmd("AT+CIPSEND\r", AT_RDY)) {
       pUart->send(dat);
       pUart->sendStr_P(PSTR("\x1A\r"));
@@ -372,14 +373,14 @@ void CModem::service(void) {
   c08* pstr = 0;
   c08* start = 0;
   c08* end = 0;
-  u08 rxmsg[MDM_MAX_RX_CMD_LEN];
   u08 len;
-  if (pUart->rxFIFO.read(rxmsg, 0, true)) {
-    pstr = strstr_P((c08*) rxmsg, PSTR("+IPD"));
-    if (pstr != 0 && gprsrx == false) {
-      start = strchr((c08*) rxmsg, '*');
+  memset(gprsraw, 0, MDM_MAX_RX_CMD_LEN);
+  if (pUart->rxFIFO.read(gprsraw, 0, true)) {
+    pstr = strstr_P((c08*) gprsraw, PSTR("+IPD"));
+    if (pstr != 0) {
+      start = strchr((c08*) gprsraw, '*');
       if (start) {
-        end = strchr((c08*) rxmsg, '#');
+        end = strchr((c08*) gprsraw, '#');
         if (end) {
           len = end - start;
           rxFifo.write((u08*) start, len);

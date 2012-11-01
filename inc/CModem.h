@@ -146,7 +146,7 @@ class CModem {
     sSMS sms;
     u08 smsrx;
     u08 smstx_en;
-    c08 gprsraw[MDM_MAX_RX_CMD_LEN];
+    u08 gprsraw[MDM_MAX_RX_CMD_LEN];
     u08 gprsrx;
     CModem(CUART * _pUart);
     bool initModem(void);

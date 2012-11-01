@@ -116,6 +116,7 @@ void CNetwork::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus*
   serial->clearRx();
   Header.Length = 13 + strlen((c08*) strID) + strlen((c08*) strGPS)
       + strlen((c08*) strRFID);
+  htonl(&Header.Length);
   Header.MsgID = U2S_STATUSUPDATE;
   serial->send((u08*) &Header, sizeof(Header));
 // E_UNIT_ID
@@ -137,7 +138,7 @@ void CNetwork::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus*
   serial->send((u08*) &strHdr, sizeof(sDataStringHeader));
   serial->sendStr((c08*) strRFID);
 // E_COVER_STATUS
-  binHdr.elementID = E_COVER_RFID;
+  binHdr.elementID = E_COVER_STATUS;
   binHdr.type = T_UCHAR;
   serial->send((u08*) &binHdr, sizeof(sDataBinHeader));
   serial->send((u08*) status, 1);

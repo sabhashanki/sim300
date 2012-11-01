@@ -8,6 +8,7 @@
 #include <avr/wdt.h>
 #include <avr/eeprom.h>
 #include <util/atomic.h>
+#include <util/delay.h>
 /****************************************************************************************/
 #include "network.h"
 #include "main.h"
@@ -25,6 +26,7 @@
 /****************************************************************************************/
 static volatile u32 isr_time = 0;
 static volatile u32 time = 0;
+bool testSend = true;
 /****************************************************************************************/
 #define TICKER_PERIOD  139;
 using namespace CCONTROLLER;
@@ -45,7 +47,6 @@ CNetwork server(&socket);
 //sTimeDate rtc_time;
 /****************************************************************************************/
 int main(void) {
-  bool testSend = true;
   //=== Enable the External RAM
   //BIT_SET_HI(XMCRA, SRE);
   InitIOPins();
@@ -66,6 +67,7 @@ int main(void) {
     goto error;
 
   while (1) {
+    _delay_ms(10);
     Modem.service();
     socket.service();
     if (testSend) {
