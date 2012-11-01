@@ -77,7 +77,6 @@ CModem::CModem(CUART * _pUart) {
 /*******************************************************************************/
 bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
   u16 cnt = 0;
-  u08 d;
   c08 rxRsp[MDM_MAX_RX_CMD_LEN];
   memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
   pUart->clear();
@@ -86,11 +85,11 @@ bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
   while (cnt < 10) {
     cnt++;
     _delay_ms(del / 10);
-    pUart->peek(rxRsp);
+    pUart->rxFIFO.read((u08*) rxRsp, 0, true);
     if (strstr((const char*) rxRsp, (c08*) _expRsp))
       break;
   }
-  pUart->receive((u08*) rxRsp);
+  pUart->rxFIFO.read((u08*) rxRsp);
   if (strstr((const char*) rxRsp, (c08*) _expRsp)) {
     return true;
   }
@@ -111,7 +110,7 @@ bool CModem::checkSignalStrength() {
   strcpy(expRsp, AT_OK);
   pUart->sendStr(cmd);
   _delay_ms(300);
-  pUart->receive((u08*) rxRsp);
+  pUart->rxFIFO.read((u08*) rxRsp);
   if (strstr(rxRsp, expRsp)) {
     pStr = rxRsp;
     str = strsep(&pStr, ":");
@@ -136,7 +135,7 @@ bool CModem::checkSIM() {
   strcpy(exp, AT_OK);
   pUart->sendStr(cmd);
   _delay_ms(300);
-  pUart->receive((u08*) rsp);
+  pUart->rxFIFO.read((u08*) rsp);
   if (strstr(rsp, exp)) {
     if (strstr(rsp, "+CPIN: READY")) {
       return true;
@@ -157,7 +156,7 @@ bool CModem::checkRegistration() {
   strcpy(exp, AT_OK);
   pUart->sendStr(cmd);
   _delay_ms(300);
-  pUart->receive((u08*) rsp);
+  pUart->rxFIFO.read((u08*) rsp);
   if (strstr(rsp, exp)) {
     if (strstr(rsp, "+CREG: 0,1"))
       return true;
@@ -206,7 +205,6 @@ bool CModem::initModem(void) {
 bool CModem::initIP(bool useDns) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
   u08 rc = 0;
-  u08 c;
 
   retry: if (rc > 4) {
     return false;
@@ -288,6 +286,17 @@ bool CModem::send(u08* dat, u16 len) {
   return false;
 }
 /*******************************************************************************/
+bool CModem::send(Tfifo<u08>* dat) {
+  if (ss == SOCK_ESTABLISHED) {
+    if (HandleAtCmd("AT+CIPSEND\r", AT_RDY)) {
+      pUart->send(dat);
+      pUart->sendStr_P(PSTR("\x1A\r"));
+      return true;
+    }
+  }
+  return false;
+}
+/*******************************************************************************/
 bool CModem::SendSMS(char *PhoneNumber, char *Message) {
   if (mdmState == MDM_READY && simcard_ok == true && smstx_en == true) {
     mdmState = MDM_SEND_SMS;
@@ -333,13 +342,12 @@ void CModem::setNextState(eMdmState nextState) {
   mdmState = nextState;
 //}
 }
-
+/******************************************************************************/
 bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
   char expRsp[MDM_MAX_RX_CMD_LEN];
   char rxRsp[MDM_MAX_RX_CMD_LEN];
   memset(expRsp, 0, MDM_MAX_RX_CMD_LEN);
   memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
-  u08 cnt = 0;
   u08 len;
   strcpy((c08*) expRsp, _expRsp);
   len = strlen((c08*) expRsp);
@@ -349,7 +357,7 @@ bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
 //      return false;
   }
   len = pUart->rxnum();
-  pUart->receive((u08*) rxRsp, len);
+  pUart->rxFIFO.read((u08*) rxRsp, len);
   DbgUart.sendStr(rxRsp);
   if (_rxRsp) {
     strcpy((char*) _rxRsp, rxRsp);
@@ -366,7 +374,7 @@ void CModem::service(void) {
   c08* end = 0;
   u08 rxmsg[MDM_MAX_RX_CMD_LEN];
   u08 len;
-  if (pUart->peek((c08*) rxmsg)) {
+  if (pUart->rxFIFO.read(rxmsg, 0, true)) {
     pstr = strstr_P((c08*) rxmsg, PSTR("+IPD"));
     if (pstr != 0 && gprsrx == false) {
       start = strchr((c08*) rxmsg, '*');
@@ -374,7 +382,7 @@ void CModem::service(void) {
         end = strchr((c08*) rxmsg, '#');
         if (end) {
           len = end - start;
-          rxFifo.add((u08*) start, len);
+          rxFifo.write((u08*) start, len);
           pUart->clearRx();
         }
       }
@@ -833,16 +841,15 @@ bool CModem::PowerOn(void) {
 //      break;
 //  }
 //}
-
-  /*
-   bool CModem::SIMSetPin(c08* pin) {
-   if (mdmState == MDM_READY) {
-   strcpy(pincode, pin);
-   mdmState = MDM_SET_SIMCARD_PIN;
-   return true;
-   } else {
-   return false;
-   }
-   }
-   */
+/*
+ bool CModem::SIMSetPin(c08* pin) {
+ if (mdmState == MDM_READY) {
+ strcpy(pincode, pin);
+ mdmState = MDM_SET_SIMCARD_PIN;
+ return true;
+ } else {
+ return false;
+ }
+ }
+ */
 

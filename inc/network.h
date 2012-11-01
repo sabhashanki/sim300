@@ -44,7 +44,7 @@ namespace NS_CNETWORK {
   /****************************************************************************************/
   class CNetwork {
     private:
-      static const u16 MAX_PACKET_LEN = 256;
+      static const u16 MAX_PACKET_LEN = 128;
       Cserial* serial;
       u08 cntByte;
       u32 timeLimit;
@@ -57,10 +57,9 @@ namespace NS_CNETWORK {
       volatile u32 time;
       sHeader Header;
       u08* payload;
-      CNetwork(Cserial* serial, u08 size);
-      CNetwork(Cserial* serial, u08 size, u08 node);
+      CNetwork(Cserial* serial, u08 size = MAX_PACKET_LEN, u08 node = 0);
       void statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus* status);
-      u08 setPayloadBufSize(u08 size);
+      void setPayloadBufSize(u08 size);
       void service(void);
       u08 packetAvailable(void);
       void reset(void);

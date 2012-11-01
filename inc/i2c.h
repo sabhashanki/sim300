@@ -192,7 +192,7 @@ namespace I2C {
         // save data
         cntrl = ((devAdr << 1) & 0xFE);
         txFifo.clear();
-        txFifo.add(data, length);
+        txFifo.write(data, length);
         // send start condition
         sendStart();
       }
@@ -217,7 +217,7 @@ namespace I2C {
           service();
         };
         // return data
-        rxFifo.remove(data, length);
+        rxFifo.read(data, length);
         return !error;
       }
       /****************************************************************************************/
@@ -233,11 +233,11 @@ namespace I2C {
           // Master General
           case TW_START: // 0x08: Sent start condition
           case TW_REP_START: // 0x10: Sent repeated start condition
-            // send device address
+            // send device writeress
             sendByte(cntrl);
             break;
             // Master Transmitter & Receiver status codes
-          case TW_MT_SLA_ACK: // 0x18: Slave address acknowledged
+          case TW_MT_SLA_ACK: // 0x18: Slave writeress acknowledged
           case TW_MT_DATA_ACK: // 0x28: Data acknowledged
             if (txFifo.empty()) {
               // transmit stop condition, enable SLA ACK
@@ -246,20 +246,20 @@ namespace I2C {
               mode = IDLE;
             } else {
               // send data
-              txFifo.remove(&dat, 1);
+              txFifo.read(&dat, 1);
               sendByte(dat);
             }
             break;
           case TW_MR_DATA_NACK: // 0x58: Data received, NACK reply issued
             // store final received data byte
             dat = reg->twdr;
-            rxFifo.add(&dat, 1);
+            rxFifo.write(&dat, 1);
             sendStop();
             // set mode
             mode = IDLE;
             break;
-          case TW_MR_SLA_NACK: // 0x48: Slave address not acknowledged
-          case TW_MT_SLA_NACK: // 0x20: Slave address not acknowledged
+          case TW_MR_SLA_NACK: // 0x48: Slave writeress not acknowledged
+          case TW_MT_SLA_NACK: // 0x20: Slave writeress not acknowledged
           case TW_MT_DATA_NACK: // 0x30: Data not acknowledged
             // transmit stop condition, enable SLA ACK
             sendStop();
@@ -280,10 +280,10 @@ namespace I2C {
           case TW_MR_DATA_ACK: // 0x50: Data acknowledged
             // store received data byte
             dat = reg->twdr;
-            rxFifo.add(&dat, 1);
+            rxFifo.write(&dat, 1);
             rxLength--;
             // fall-through to see if more bytes will be received
-          case TW_MR_SLA_ACK: // 0x40: Slave address acknowledged
+          case TW_MR_SLA_ACK: // 0x40: Slave writeress acknowledged
             if (rxLength > 0)
               // data byte will be received, reply with ACK (more bytes in transfer)
               receiveByte(true);
@@ -296,7 +296,7 @@ namespace I2C {
           case TW_SR_ARB_LOST_SLA_ACK: // 0x68: own SLA+W has been received, ACK has been returned
           case TW_SR_GCALL_ACK: // 0x70:     GCA+W has been received, ACK has been returned
           case TW_SR_ARB_LOST_GCALL_ACK: // 0x78:     GCA+W has been received, ACK has been returned
-            // we are being addressed as slave for writing (data will be received from master)
+            // we are being writeressed as slave for writing (data will be received from master)
             // set mode
             mode = SLAVE_RX;
             // prepare buffer
@@ -307,7 +307,7 @@ namespace I2C {
           case TW_SR_GCALL_DATA_ACK: // 0x90: data byte has been received, ACK has been returned
             // get previously received data byte
             dat = reg->twdr;
-            rxFifo.add(&dat, 1);
+            rxFifo.write(&dat, 1);
             // check receive buffer status
             if (rxFifo.space() > 1) {
               // receive data byte and return ACK
@@ -345,7 +345,7 @@ namespace I2C {
             // fall-through to transmit first data byte
           case TW_ST_DATA_ACK: // 0xB8: data byte has been transmitted, ACK has been received
             // transmit data byte
-            txFifo.remove(&dat, 1);
+            txFifo.read(&dat, 1);
             reg->twdr = dat;
             if (txFifo.used() > 0)
               // expect ACK to data byte

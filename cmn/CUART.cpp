@@ -148,7 +148,7 @@ u16 CUART::send_P(const prog_char buf[], u16 nBytes) {
   }
   while(nBytes){
     dat = pgm_read_byte(buf++);
-    res = txFIFO.add(&dat,1);
+    res = txFIFO.write(&dat,1);
     nBytes--;
   }
   return res;
@@ -166,52 +166,71 @@ void CUART::uprintf(const char *__fmt, ...) {
 #endif
 /****************************************************************************************/
 u16 CUART::send(c08* buffer, u16 nBytes) {
-	u16 res;
-	if (!nBytes || !buffer) {
-		return 0;
-	}
-	res = txFIFO.add((u08 *)buffer, nBytes);
-	switch (uartNr) {
-	case 0:
-		// enable UDRE interrupt => we will start sending as soon as interrupt is handled
-		UCSR0B |= BV(UDRIE0);
-		break;
+  u16 res;
+  if (!nBytes || !buffer) {
+    return 0;
+  }
+  res = txFIFO.write((u08 *)buffer, nBytes);
+  switch (uartNr) {
+  case 0:
+    // enable UDRE interrupt => we will start sending as soon as interrupt is handled
+    UCSR0B |= BV(UDRIE0);
+    break;
 #ifdef UDR1
-	case 1:
-		UCSR1B |= BV(UDRIE1);
-		break;
+  case 1:
+    UCSR1B |= BV(UDRIE1);
+    break;
 #endif
 #ifdef UDR2
-	case 2:
-		UCSR2B |= BV(UDRIE2);
-		break;
+  case 2:
+    UCSR2B |= BV(UDRIE2);
+    break;
 #endif
 #ifdef UDR2
-	case 3:
-		UCSR3B |= BV(UDRIE3);
-		break;
+  case 3:
+    UCSR3B |= BV(UDRIE3);
+    break;
 #endif
-	}
-	//return number of bytes written
-	return res;
+  }
+  //return number of bytes written
+  return res;
 }
 /****************************************************************************************/
-u16 CUART::receive(u08* buffer, u16 nBytes) {
-	return rxFIFO.remove(buffer, nBytes);
+u16 CUART::send(Tfifo<u08>* dat) {
+  u16 res;
+  res = txFIFO.write(dat);
+  switch (uartNr) {
+  case 0:
+    // enable UDRE interrupt => we will start sending as soon as interrupt is handled
+    UCSR0B |= BV(UDRIE0);
+    break;
+#ifdef UDR1
+  case 1:
+    UCSR1B |= BV(UDRIE1);
+    break;
+#endif
+#ifdef UDR2
+  case 2:
+    UCSR2B |= BV(UDRIE2);
+    break;
+#endif
+#ifdef UDR2
+  case 3:
+    UCSR3B |= BV(UDRIE3);
+    break;
+#endif
+  }
+  //return number of bytes written
+  return res;
 }
-
-u16 CUART::peek(c08* buffer) {
-  return rxFIFO.peek(buffer);
-}
-
+/****************************************************************************************/
 u16 CUART::space(void) {
 	return txFIFO.space();
 }
-
+/****************************************************************************************/
 u16 CUART::rxnum(void) {
-  return rxFIFO.received();
+  return rxFIFO.used();
 }
-
 
 /****************************************************************************************/
 void CUART::setBaudRate(u32 baudRate) {
@@ -312,7 +331,7 @@ void SIG_UART_DATA(void) {
 	if (pUart[0]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[0]->txFIFO.remove(&dat, 1);
+	cnt = pUart[0]->txFIFO.read(&dat, 1);
 	if (cnt) {
 		UDR0 = dat;
 	} else {
@@ -334,7 +353,7 @@ void SIG_UART_RECV(void) {
 	u08 data;
 	/* read the received data */
 	data = UDR0;
-	pUart[0]->rxFIFO.add(&data, 1);
+	pUart[0]->rxFIFO.write(&data, 1);
 }
 //===============================================================================
 // UART Transmit register empty
@@ -345,7 +364,7 @@ void SIG_USART0_DATA(void) {
 	if (pUart[0]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[0]->txFIFO.remove(&dat, 1);
+	cnt = pUart[0]->txFIFO.read(&dat, 1);
 	if (cnt) {
 		UDR0 = dat;
 	} else {
@@ -367,7 +386,7 @@ void SIG_USART0_RECV(void) {
 	u08 data;
 	/* read the received data */
 	data = UDR0;
-	pUart[0]->rxFIFO.add(&data, 1);
+	pUart[0]->rxFIFO.write(&data, 1);
 }
 
 //===============================================================================
@@ -380,7 +399,7 @@ void SIG_USART1_DATA(void) {
 	if (pUart[1]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[1]->txFIFO.remove(&dat, 1);
+	cnt = pUart[1]->txFIFO.read(&dat, 1);
 	if (cnt) {
 		UDR1 = dat;
 	} else {
@@ -402,7 +421,7 @@ void SIG_USART1_RECV(void) {
 	u08 data;
 	/* read the received data */
 	data = UDR1;
-	pUart[1]->rxFIFO.add(&data, 1);
+	pUart[1]->rxFIFO.write(&data, 1);
 }
 #endif
 #ifdef UDR2
@@ -415,7 +434,7 @@ void SIG_USART2_DATA(void) {
 	if (pUart[2]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[2]->txFIFO.remove(&dat, 1);
+	cnt = pUart[2]->txFIFO.read(&dat, 1);
 	if (cnt) {
 		UDR2 = dat;
 	} else {
@@ -437,7 +456,7 @@ void SIG_USART2_RECV(void) {
 	u08 data;
 	/* read the received data */
 	data = UDR2;
-	pUart[2]->rxFIFO.add(&data, 1);
+	pUart[2]->rxFIFO.write(&data, 1);
 }
 #endif
 
@@ -451,7 +470,7 @@ void SIG_USART3_DATA(void) {
 	if (pUart[3]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[3]->txFIFO.remove(&dat, 1);
+	cnt = pUart[3]->txFIFO.read(&dat, 1);
 	if (cnt) {
 		UDR3 = dat;
 	} else {
@@ -474,6 +493,6 @@ void SIG_USART3_RECV(void) {
   u08 data;
   /* read the received data */
   data = UDR3;
-  pUart[3]->rxFIFO.add(&data, 1);
+  pUart[3]->rxFIFO.write(&data, 1);
 }
 #endif

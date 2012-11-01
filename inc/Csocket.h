@@ -39,11 +39,10 @@ class Csocket: public Cserial {
     u32 idleTime;
     Csignal signal;
     u08* buf;
-    u16 bufSize;
     bool autoclose;
     CModem* modem;
   public:
-    Csocket(CModem* modem, u16 bufSize = 255);
+    Csocket(CModem* modem, u16 bufSize = 128);
     void service(void);
     u16 send(u08* buffer, u16 nBytes);
     u16 receive(u08* buffer, u16 nBytes);

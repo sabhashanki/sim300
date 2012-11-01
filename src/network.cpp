@@ -31,40 +31,23 @@
 AnsiString str;
 #endif
 /****************************************************************************************/
-CNetwork::CNetwork(Cserial* _serial, u08 _size) {
-  this->serial = _serial;
-  State = STATE_RX_LENGTH;
-  time = 0;
-  timeLimit = 0;
-  payloadSize = 0;
-  payload = 0;
-  healthy = true;
-  baudRate = serial->getBaudRate();
-  setPayloadBufSize(_size);
-}
-/****************************************************************************************/
 CNetwork::CNetwork(Cserial* _serial, u08 _size, u08 _node) {
   this->serial = _serial;
   this->NodeId = _node;
   State = STATE_RX_LENGTH;
   time = 0;
   timeLimit = 0;
-  payloadSize = 0;
-  payload = 0;
+  payloadSize = _size;
+  payload = NULL;
   healthy = true;
   baudRate = serial->getBaudRate();
   setPayloadBufSize(_size);
 }
 /****************************************************************************************/
-u08 CNetwork::setPayloadBufSize(u08 size) {
-  payload = (u08*) malloc(size);
-  if (payload == NULL) {
-    while (1) {
-      payload = NULL;
-    }
+void CNetwork::setPayloadBufSize(u08 size) {
+  while (payload == NULL) {
+    payload = (u08*) malloc(size);
   }
-  payloadSize = size;
-  return true;
 }
 /****************************************************************************************/
 void CNetwork::service(void) {
@@ -135,25 +118,25 @@ void CNetwork::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus*
       + strlen((c08*) strRFID);
   Header.MsgID = U2S_STATUSUPDATE;
   serial->send((u08*) &Header, sizeof(Header));
-  // E_UNIT_ID
+// E_UNIT_ID
   strHdr.elementID = E_UNIT_ID;
   strHdr.type = T_STRING;
   strHdr.strLen = strlen((c08*) strID);
   serial->send((u08*) &strHdr, sizeof(sDataStringHeader));
   serial->sendStr((c08*) strID);
-  // E_UNIT_GPS
+// E_UNIT_GPS
   strHdr.elementID = E_UNIT_GPS;
   strHdr.type = T_STRING;
   strHdr.strLen = strlen((c08*) strGPS);
   serial->send((u08*) &strHdr, sizeof(sDataStringHeader));
   serial->sendStr((c08*) strGPS);
-  // E_COVER_RFID
+// E_COVER_RFID
   strHdr.elementID = E_COVER_RFID;
   strHdr.type = T_STRING;
   strHdr.strLen = strlen((c08*) strRFID);
   serial->send((u08*) &strHdr, sizeof(sDataStringHeader));
   serial->sendStr((c08*) strRFID);
-  // E_COVER_STATUS
+// E_COVER_STATUS
   binHdr.elementID = E_COVER_RFID;
   binHdr.type = T_UCHAR;
   serial->send((u08*) &binHdr, sizeof(sDataBinHeader));
@@ -161,14 +144,14 @@ void CNetwork::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus*
 }
 /****************************************************************************************/
 void CNetwork::sendTestPkt() {
-  u08* strID;
-  u08* strGPS;
-  u08* strRFID;
+  u08 strID[32];
+  u08 strGPS[32];
+  u08 strRFID[32];
   eCoverStatus status;
 
-  strcpy((c08*)strID, "1234");
-  strcpy((c08*)strGPS, "1.2 3.4");
-  strcpy((c08*)strRFID, "X8974");
+  strcpy((c08*) &strID, "1234");
+  strcpy((c08*) &strGPS, "1.2 3.4");
+  strcpy((c08*) &strRFID, "X8974");
   status = COVER_OPEN;
 
   statusUpdate(strID, strGPS, strRFID, &status);

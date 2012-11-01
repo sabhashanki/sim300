@@ -32,11 +32,11 @@ using namespace CCONTROLLER;
 void TimeTicker(void);
 /****************************************************************************************/
 //CTimer Timer(0, TIMER_CLK_DIV8);
-CUART DbgUart(0, 115200, 255);
-CUART ModemUart(2, 115200, 255);
+CUART DbgUart(0, 115200);
+CUART ModemUart(2, 115200);
 CModem Modem(&ModemUart);
 Csocket socket(&Modem);
-CNetwork server(&socket, 255);
+CNetwork server(&socket);
 //Ci2c i2c;
 //Crtc rtc(&i2c, 0xD0);
 //CServer Server(&Modem);
@@ -45,8 +45,7 @@ CNetwork server(&socket, 255);
 //sTimeDate rtc_time;
 /****************************************************************************************/
 int main(void) {
-  u08 dat[128];
-  bool testSend = false;
+  bool testSend = true;
   //=== Enable the External RAM
   //BIT_SET_HI(XMCRA, SRE);
   InitIOPins();

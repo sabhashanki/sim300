@@ -30,11 +30,11 @@ void Cserial::setBufSize(u16 bufSize) {
 }
 /****************************************************************************************/
 u16 Cserial::receive(u08* buffer, u16 nBytes) {
-  return rxFIFO.remove(buffer, nBytes);
+  return rxFIFO.read(buffer, nBytes);
 }
 /****************************************************************************************/
 u16 Cserial::receive(u08* buffer) {
-  return rxFIFO.remove(buffer);
+  return rxFIFO.read(buffer);
 }
 /****************************************************************************************/
 u16 Cserial::space(void) {
@@ -75,7 +75,7 @@ u16 Cserial::send_P(const prog_char buf[], u16 nBytes) {
   }
   while (nBytes) {
     dat = pgm_read_byte(buf++);
-    res = txFIFO.add(&dat, 1);
+    res = txFIFO.write(&dat, 1);
     nBytes--;
   }
   return res;

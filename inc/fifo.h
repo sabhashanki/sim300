@@ -29,8 +29,11 @@ class Tfifo {
   public:
     Tfifo(void);
     bool setBufSize(u16 numBlocks);
-    u16 add(T* src, u16 numBlocks);
-    u16 remove(T* dst, u16 numBlocks);
+    u16 write(T* src, u16 numBlocks);
+    u16 write(Tfifo<T>* src);
+    u16 read(T* dst, u16 numBlocks, bool keep);
+    u16 read(Tfifo<T>* _dst, u16 numBlocks, bool keep);
+    bool readToStr(c08* dst);
     u16 space(void);
     u16 used(void) {
       return _used;
@@ -63,11 +66,12 @@ u16 Tfifo<T>::space(void) {
 }
 /****************************************************************************************/
 template<class T>
-u16 Tfifo<T>::add(T* _src, u16 numBlocks) {
+u16 Tfifo<T>::write(T* _src, u16 numBlocks) {
   void* dst;
   void* src = _src;
   u16 cnt = 0;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  {
     while (cnt < numBlocks && _used < size) {
       dst = (void*) ((u16) buffer + (headIndex * sizeof(T)));
       memcpy(dst, src, sizeof(T));
@@ -81,13 +85,35 @@ u16 Tfifo<T>::add(T* _src, u16 numBlocks) {
 }
 /****************************************************************************************/
 template<class T>
-u16 Tfifo<T>::remove(T* _dst, u16 numBlocks = 0) {
+u16 Tfifo<T>::write(Tfifo<T>* src) {
+  void* dst;
+  T _src;
+  u16 cnt = 0;
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  {
+    while (!src->empty() && _used < size) {
+      dst = (void*) ((u16) buffer + (headIndex * sizeof(T)));
+      src->read(&_src, 1);
+      memcpy(dst, &_src, sizeof(T));
+      headIndex = (headIndex + 1) % size;
+      cnt++;
+      _used++;
+    }
+  }
+  return cnt;
+}
+/****************************************************************************************/
+template<class T>
+u16 Tfifo<T>::read(T* _dst, u16 numBlocks = 0, bool keep = false) {
   void* dst = _dst;
   void* src;
+  u08 keepTail = tailIndex;
+  u08 keepUsed = _used;
   u16 cnt = 0;
   if (numBlocks == 0)
-    numBlocks = size;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    numBlocks = _used;
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  {
     while (cnt < numBlocks && _used > 0) {
       src = (void*) ((u16) buffer + (tailIndex * sizeof(T)));
       memcpy(dst, src, sizeof(T));
@@ -96,8 +122,51 @@ u16 Tfifo<T>::remove(T* _dst, u16 numBlocks = 0) {
       cnt++;
       _used--;
     }
+    if (keep) {
+      tailIndex = keepTail;
+      _used = keepUsed;
+    }
   }
   return cnt;
+}
+
+/****************************************************************************************/
+template<class T>
+u16 Tfifo<T>::read(Tfifo<T>* _dst, u16 numBlocks = 0, bool _keep = false) {
+  T dst;
+  void* src;
+  u08 keepTail = tailIndex;
+  u08 keepUsed = _used;
+  u16 cnt = 0;
+  if (numBlocks == 0)
+    numBlocks = _used;
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  {
+    while (cnt < numBlocks && _used > 0) {
+      src = (void*) ((u16) buffer + (tailIndex * sizeof(T)));
+      memcpy(&dst, src, sizeof(T));
+      _dst->write(&dst, 1);
+      tailIndex = (tailIndex + 1) % size;
+      cnt++;
+      _used--;
+    }
+    if (_keep) {
+      tailIndex = keepTail;
+      _used = keepUsed;
+    }
+  }
+  return cnt;
+}
+
+/****************************************************************************************/
+template<class T>
+bool Tfifo<T>::readToStr(c08* str) {
+  u08 idx = _used;
+  if (_used == 0)
+    return false;
+  read((u08*) str, _used);
+  str[idx] = 0;
+  return true;
 }
 /****************************************************************************************/
 template<class T>
@@ -107,7 +176,8 @@ bool Tfifo<T>::empty(void) {
 /****************************************************************************************/
 template<class T>
 void Tfifo<T>::clear(void) {
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  {
     tailIndex = 0;
     headIndex = 0;
     _used = 0;

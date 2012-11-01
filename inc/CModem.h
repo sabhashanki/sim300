@@ -100,7 +100,6 @@ typedef struct {
 //*****************************************************************************
 class CModem {
   private:
-    Tfifo<u08> rxFifo;
     eMdmState mdmState;
     eCmdState cmdState;
     eMdmState failState;
@@ -133,6 +132,7 @@ class CModem {
     bool PowerOn(void);
     void clearTimer(void);
   public:
+    Tfifo<u08> rxFifo;
     eSocketState ss;
     CUART *pUart;
     u08 simcard_ok;
@@ -149,12 +149,6 @@ class CModem {
     c08 gprsraw[MDM_MAX_RX_CMD_LEN];
     u08 gprsrx;
     CModem(CUART * _pUart);
-    u16 rxnum(void) {
-      return rxFifo.used();
-    }
-    bool receive(u08* buf, u08 len = 0) {
-      rxFifo.remove(buf, len);
-    }
     bool initModem(void);
     bool initIP(bool useDns);
     bool connect(void);
@@ -168,6 +162,7 @@ class CModem {
     bool GetSignalQuality(void);
     bool SendSMS(char *PhoneNumber, char *Message);
     bool send(u08* dat, u16 len);
+    bool send(Tfifo<u08>* dat);
     void ServerSetIP(c08* _IP, c08 *_port, bool _usedns);
     void GetUnSolicited(void);
 };

@@ -33,7 +33,6 @@ Csocket::Csocket(CModem* _modem, u16 _bufSize) {
   this->socketNr = socketNr;
   this->port = port;
   healthy = true;
-  bufSize = _bufSize;
   setBufSize(_bufSize);
   rxOverflowCnt = 0;
   txBusy = false;
@@ -48,19 +47,13 @@ void Csocket::service(void) {
   u32 len;
   switch (modem->ss) {
     case SOCK_ESTABLISHED:
-      len = MIN(txFIFO.used(), bufSize);
-      if (len > 0) {
-        txFIFO.remove(buf, len);
-        if (modem->send(buf, bufSize)) {
+      if (txFIFO.used() > 0) {
+        if (modem->send(&txFIFO)) {
           idleTime = 0;
         }
       }
-      if ((len = modem->rxnum()) > 0) {
-        len = MIN(len, rxFIFO.space());
-        len = MIN(len, bufSize);
-        //TODO : Fix buffer protection
-        modem->receive(buf, len);
-        rxFIFO.add(buf, len);
+      if ((len = modem->rxFifo.used()) > 0) {
+        modem->rxFifo.read(&rxFIFO);
         idleTime = 0;
       }
       if (autoclose) {
@@ -94,7 +87,7 @@ u16 Csocket::send(u08* buffer, u16 nBytes) {
   if (!nBytes || !buffer) {
     return 0;
   }
-  res = txFIFO.add(buffer, nBytes);
+  res = txFIFO.write(buffer, nBytes);
   return res;
 }
 /****************************************************************************************/
