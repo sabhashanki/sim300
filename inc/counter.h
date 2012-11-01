@@ -25,6 +25,18 @@
 #define COUNTER_CLK_T_FALL      0x06  ///< Counter clocked at T falling edge
 #define COUNTER_CLK_T_RISE      0x07  ///< Counter clocked at T rising edge
 #endif
+#ifdef __AVR_ATmega1280__
+#define COUNTER_CLK_STOP        0x00  ///< Counter Stopped
+#define COUNTER_CLK_DIV1        0x01  ///< Counter clocked at F_CPU
+#define COUNTER_CLK_DIV8        0x02  ///< Counter clocked at F_CPU/8
+#define COUNTER_CLK_DIV64       0x03  ///< Counter clocked at F_CPU/64
+#define COUNTER_CLK_DIV256      0x04  ///< Counter clocked at F_CPU/256
+#define COUNTER_CLK_DIV1024     0x05  ///< Counter clocked at F_CPU/1024
+#define COUNTER_CLK_T_FALL      0x06  ///< Counter clocked at T falling edge
+#define COUNTER_CLK_T_RISE      0x07  ///< Counter clocked at T rising edge
+#define COUNTER_PRESCALE_MASK   0x07  ///< Counter Prescaler Bit-Mask
+#endif
+#ifdef ATMega0
 #define COUNTER_CLK_STOP        0x00  ///< Counter Stopped
 #define COUNTER_CLK_DIV1        0x01  ///< Counter clocked at F_CPU
 #define COUNTER_CLK_DIV8        0x02  ///< Counter clocked at F_CPU/8
@@ -33,9 +45,7 @@
 #define COUNTER_CLK_DIV128      0x05  ///< Counter clocked at F_CPU/128
 #define COUNTER_CLK_DIV256      0x06  ///< Counter clocked at F_CPU/256
 #define COUNTER_CLK_DIV1024     0x07  ///< Counter clocked at F_CPU/1024
-#define COUNTER_PRESCALE_MASK   0x07  ///< Counter Prescaler Bit-Mask
-#define COUNTER_CLK_STOP        0x00  ///< Counter Stopped
-
+#endif
 
 
 // Different prescale values must be used for timer/counter 2

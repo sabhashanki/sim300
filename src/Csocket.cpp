@@ -38,47 +38,49 @@ Csocket::Csocket(Cmodem* _modem, u16 _bufSize) {
   txBusy = false;
   print = true;
   //dst = dstIP;
-  signal.setPeriod(1 / TICK_BASE);
+  signal.setPeriod(1 / Csignal::tickBase);
   scheduler.attach(&signal);
   autoclose = false;
 }
 /****************************************************************************************/
 void Csocket::service(void) {
   u32 len;
-  switch (modem->ss) {
-    case SOCK_ESTABLISHED:
-      if (txFIFO.used() > 0) {
-        if (modem->send(&txFIFO)) {
+  if (signal.isSet()) {
+    switch (modem->ss) {
+      case SOCK_ESTABLISHED:
+        if (txFIFO.used() > 0) {
+          if (modem->send(&txFIFO)) {
+            idleTime = 0;
+          }
+        }
+        if ((len = modem->rxFifo.used()) > 0) {
+          modem->rxFifo.read(&rxFIFO);
           idleTime = 0;
         }
-      }
-      if ((len = modem->rxFifo.used()) > 0) {
-        modem->rxFifo.read(&rxFIFO);
-        idleTime = 0;
-      }
-      if (autoclose) {
-        if (idleTime > LIFETIME) {
-          modem->disconnect();
+        if (autoclose) {
+          if (idleTime > LIFETIME) {
+            modem->disconnect();
+          }
         }
-      }
-      if (signal.isSet()) {
-        idleTime++;
-      }
-      break;
-    case SOCK_CLOSE_WAIT:
-      modem->disconnect();
-      break;
-    case SOCK_CLOSED: // CLOSED
-      if (!txFIFO.empty()) {
-        idleTime = 0;
-        modem->connect();
-      }
-      break;
-    case SOCK_INIT: // The SOCKET opened with TCP mode
-      //connectSocket(socketNr, (u08*) &dst, port);
-      break;
-    default:
-      break;
+        if (signal.isSet()) {
+          idleTime++;
+        }
+        break;
+      case SOCK_CLOSE_WAIT:
+        modem->disconnect();
+        break;
+      case SOCK_CLOSED: // CLOSED
+        if (!txFIFO.empty()) {
+          idleTime = 0;
+          modem->connect();
+        }
+        break;
+      case SOCK_INIT: // The SOCKET opened with TCP mode
+        //connectSocket(socketNr, (u08*) &dst, port);
+        break;
+      default:
+        break;
+    }
   }
 }
 /****************************************************************************************/

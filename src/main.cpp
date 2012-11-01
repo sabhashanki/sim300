@@ -52,6 +52,7 @@ int main(void) {
   InitIOPins();
   WDTCSR = 0x00; // Disable Watchdog for now
   //Timer.attach(TimeTicker);
+  scheduler.start();
   sei();
   debugUart.sendStr_P(PSTR("\x1B[2J")); //Clear Screen
   debugUart.sendStr_P(PSTR("\x1B[0;0H")); //Position Cursor

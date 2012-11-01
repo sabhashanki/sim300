@@ -16,10 +16,6 @@
 #include "timer.h"
 /****************************************************************************************/
 namespace SCHEDULER {
-  const u08 DIVISOR = COUNTER_CLK_DIV1024;
-  const u32 PERIOD_CNT = (255);
-  const f32 TICK_BASE = 0.032768;
-  const u08 MAX_SIGNALS = 8;
   typedef u08 tSignal;
 }
 /****************************************************************************************/
@@ -31,6 +27,11 @@ class Csignal {
     u16 period;
     u16 ticks;
   public:
+    static const u08 divisor = COUNTER_CLK_DIV1024;
+    static const u08 periodCnt = (255);
+    static const f32 tickBase = 0.0177083;
+    //static const f32 tickBase = (u32)((u16)1024 * (u08)periodCnt) / F_CPU;
+    static const u08 maxSignals = 8;
     Csignal() {
       set = false;
       ticks = 0;
