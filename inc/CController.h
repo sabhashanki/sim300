@@ -29,7 +29,7 @@ namespace CCONTROLLER {
     private:
       u08 smsCnt;
       u08 Authorise;
-      CModem *modem;
+      Cmodem *modem;
       CServer *server;
       u08 SiteID;
       u08 idValid;
@@ -47,7 +47,7 @@ namespace CCONTROLLER {
       void TagTableService(void);
     public:
       volatile u32 timer;
-      CController(CRFID* _Rfid,CModem *_modem,CServer *_server);
+      CController(CRFID* _Rfid,Cmodem *_modem,CServer *_server);
       void Service(void);
       void HandleRxData(void);
       void Setup(void);

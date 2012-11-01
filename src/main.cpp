@@ -34,11 +34,11 @@ using namespace CCONTROLLER;
 void TimeTicker(void);
 /****************************************************************************************/
 //CTimer Timer(0, TIMER_CLK_DIV8);
-CUART debugUart(0, 115200);
-CUART modemUart(2, 115200);
-CModem modem(&modemUart);
+Cuart debugUart(0, 115200);
+Cuart modemUart(2, 115200);
+Cmodem modem(&modemUart);
 Csocket socket(&modem);
-CNetwork server(&socket);
+Cnetwork server(&socket);
 //Ci2c i2c;
 //Crtc rtc(&i2c, 0xD0);
 //CServer Server(&Modem);

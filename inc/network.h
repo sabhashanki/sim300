@@ -42,7 +42,7 @@ namespace NS_CNETWORK {
     STATE_RX_LENGTH, STATE_RX_MSG_ID, STATE_RX_PAYLOAD, STATE_PACKET_AVAILABLE
   } eState;
   /****************************************************************************************/
-  class CNetwork {
+  class Cnetwork {
     private:
       static const u16 MAX_PACKET_LEN = 128;
       Cserial* serial;
@@ -57,7 +57,7 @@ namespace NS_CNETWORK {
       volatile u32 time;
       sHeader Header;
       u08* payload;
-      CNetwork(Cserial* serial, u08 size = MAX_PACKET_LEN, u08 node = 0);
+      Cnetwork(Cserial* serial, u08 size = MAX_PACKET_LEN, u08 node = 0);
       void statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus* status);
       void setPayloadBufSize(u08 size);
       void service(void);

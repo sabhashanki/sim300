@@ -31,7 +31,7 @@
 AnsiString str;
 #endif
 /****************************************************************************************/
-CNetwork::CNetwork(Cserial* _serial, u08 _size, u08 _node) {
+Cnetwork::Cnetwork(Cserial* _serial, u08 _size, u08 _node) {
   this->serial = _serial;
   this->NodeId = _node;
   State = STATE_RX_LENGTH;
@@ -44,13 +44,13 @@ CNetwork::CNetwork(Cserial* _serial, u08 _size, u08 _node) {
   setPayloadBufSize(_size);
 }
 /****************************************************************************************/
-void CNetwork::setPayloadBufSize(u08 size) {
+void Cnetwork::setPayloadBufSize(u08 size) {
   while (payload == NULL) {
     payload = (u08*) malloc(size);
   }
 }
 /****************************************************************************************/
-void CNetwork::service(void) {
+void Cnetwork::service(void) {
   serial->service();
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
@@ -95,18 +95,18 @@ void CNetwork::service(void) {
   }
 }
 /****************************************************************************************/
-void CNetwork::reset(void) {
+void Cnetwork::reset(void) {
   State = STATE_RX_LENGTH;
 }
 /****************************************************************************************/
-u08 CNetwork::packetAvailable(void) {
+u08 Cnetwork::packetAvailable(void) {
   if (State == STATE_PACKET_AVAILABLE) {
     return true;
   }
   return false;
 }
 /****************************************************************************************/
-void CNetwork::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus* status) {
+void Cnetwork::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus* status) {
   sHeader Header;
   sDataStringHeader strHdr;
   sDataBinHeader binHdr;
@@ -144,7 +144,7 @@ void CNetwork::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus*
   serial->send((u08*) status, 1);
 }
 /****************************************************************************************/
-void CNetwork::sendTestPkt() {
+void Cnetwork::sendTestPkt() {
   u08 strID[32];
   u08 strGPS[32];
   u08 strRFID[32];

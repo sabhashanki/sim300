@@ -21,9 +21,9 @@ typedef enum
 class CServer {
 private:
   u08  SiteNr;
-	CModem *modem;
+	Cmodem *modem;
 public:
-	CServer(CModem *_modem);
+	CServer(Cmodem *_modem);
 	bool SetTagInRange(u32 tagNumber);
 	bool SetTagOutRange(u32 tagNumber);
 	bool SetTagDuress(u32 tagNumber);

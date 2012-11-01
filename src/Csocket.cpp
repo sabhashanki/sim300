@@ -28,7 +28,7 @@ using namespace CSOCKET;
 //u08 debugClose = false;
 //u08 debugSend = true;
 /****************************************************************************************/
-Csocket::Csocket(CModem* _modem, u16 _bufSize) {
+Csocket::Csocket(Cmodem* _modem, u16 _bufSize) {
   modem = _modem;
   this->socketNr = socketNr;
   this->port = port;

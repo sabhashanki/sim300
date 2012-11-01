@@ -46,9 +46,9 @@ const char AT_DATA[] = "\r\n";
 const char SIM_RDY[] = "+CPIN: READY";
 const char AT_IP_CLOSE[] = "CLOSE OK";
 
-extern CUART debugUart;
+extern Cuart debugUart;
 /*******************************************************************************/
-CModem::CModem(CUART * _pUart) {
+Cmodem::Cmodem(Cuart * _pUart) {
   usedns = false;
   pUart = _pUart;
   retry = MDM_RETRIES_VAL;
@@ -75,7 +75,7 @@ CModem::CModem(CUART * _pUart) {
   rxFifo.setBufSize(255);
 }
 /*******************************************************************************/
-bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
+bool Cmodem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
   u16 cnt = 0;
   c08 rxRsp[MDM_MAX_RX_CMD_LEN];
   memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
@@ -96,7 +96,7 @@ bool CModem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
   return false;
 }
 /*******************************************************************************/
-bool CModem::checkSignalStrength() {
+bool Cmodem::checkSignalStrength() {
   const u08 len = 64;
   c08 rxRsp[len];
   c08 expRsp[len];
@@ -124,7 +124,7 @@ bool CModem::checkSignalStrength() {
 }
 
 /*******************************************************************************/
-bool CModem::checkSIM() {
+bool Cmodem::checkSIM() {
   const u08 len = 64;
   c08 rsp[len];
   c08 exp[len];
@@ -145,7 +145,7 @@ bool CModem::checkSIM() {
 }
 
 /*******************************************************************************/
-bool CModem::checkRegistration() {
+bool Cmodem::checkRegistration() {
   const u08 len = 64;
   c08 rsp[len];
   c08 exp[len];
@@ -165,7 +165,7 @@ bool CModem::checkRegistration() {
 }
 
 /*******************************************************************************/
-bool CModem::initModem(void) {
+bool Cmodem::initModem(void) {
   u08 rc = 0;
 
   if (rc > 4) {
@@ -202,7 +202,7 @@ bool CModem::initModem(void) {
 }
 /*******************************************************************************/
 
-bool CModem::initIP(bool useDns) {
+bool Cmodem::initIP(bool useDns) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
   u08 rc = 0;
 
@@ -243,7 +243,7 @@ bool CModem::initIP(bool useDns) {
 }
 
 /*******************************************************************************/
-bool CModem::connect(void) {
+bool Cmodem::connect(void) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
   strcpy(txcmd, "AT+CIPSTART=\"TCP\",\"");
   strcat(txcmd, serverIP);
@@ -257,7 +257,7 @@ bool CModem::connect(void) {
 }
 
 /*******************************************************************************/
-bool CModem::disconnect(void) {
+bool Cmodem::disconnect(void) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
   strcpy(txcmd, "AT+CIPCLOSE\r");
   if (!HandleAtCmd(txcmd, AT_IP_CLOSE))
@@ -267,14 +267,14 @@ bool CModem::disconnect(void) {
 }
 
 /*******************************************************************************/
-void CModem::ServerSetIP(c08* _IP, c08 *_port, bool _usedns) {
+void Cmodem::ServerSetIP(c08* _IP, c08 *_port, bool _usedns) {
   usedns = _usedns;
   strcpy(serverIP, _IP);
   strcpy(port, _port);
 }
 
 /*******************************************************************************/
-bool CModem::send(u08* dat, u16 len) {
+bool Cmodem::send(u08* dat, u16 len) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
   if (ss == SOCK_ESTABLISHED) {
     if (HandleAtCmd("AT+CIPSEND\r", AT_RDY)) {
@@ -286,7 +286,7 @@ bool CModem::send(u08* dat, u16 len) {
   return false;
 }
 /*******************************************************************************/
-bool CModem::send(Tfifo<u08>* dat) {
+bool Cmodem::send(Tfifo<u08>* dat) {
   if (ss == SOCK_ESTABLISHED) {
     pUart->clear();
     if (HandleAtCmd("AT+CIPSEND\r", AT_RDY)) {
@@ -298,7 +298,7 @@ bool CModem::send(Tfifo<u08>* dat) {
   return false;
 }
 /*******************************************************************************/
-bool CModem::SendSMS(char *PhoneNumber, char *Message) {
+bool Cmodem::SendSMS(char *PhoneNumber, char *Message) {
   if (mdmState == MDM_READY && simcard_ok == true && smstx_en == true) {
     mdmState = MDM_SEND_SMS;
     strcpy(sms.phonenum, PhoneNumber);
@@ -309,7 +309,7 @@ bool CModem::SendSMS(char *PhoneNumber, char *Message) {
   }
 }
 /*******************************************************************************/
-bool CModem::GetSignalQuality(void) {
+bool Cmodem::GetSignalQuality(void) {
   if (mdmState == MDM_READY) {
     mdmState = MDM_GET_SIGNAL_STRENGHT;
     return true;
@@ -318,7 +318,7 @@ bool CModem::GetSignalQuality(void) {
   }
 }
 /*******************************************************************************/
-bool CModem::SIMCheckReady(void) {
+bool Cmodem::SIMCheckReady(void) {
   if (mdmState == MDM_READY) {
     mdmState = MDM_GET_SIMCARD_STATUS;
     return true;
@@ -327,24 +327,24 @@ bool CModem::SIMCheckReady(void) {
   }
 }
 
-void CModem::UpdateMdmStatus(void) {
+void Cmodem::UpdateMdmStatus(void) {
   if (mdmState == MDM_READY) {
     mdmState = MDM_GET_SIMCARD_STATUS;
   }
 }
 
 /*******************************************************************************/
-eMdmState CModem::GetStateModem(void) {
+eMdmState Cmodem::GetStateModem(void) {
   return mdmState;
 }
 /******************************************************************************/
-void CModem::setNextState(eMdmState nextState) {
+void Cmodem::setNextState(eMdmState nextState) {
 //if (mdmState == MDM_READY) { // HACK
   mdmState = nextState;
 //}
 }
 /******************************************************************************/
-bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
+bool Cmodem::GetAtResp(char* _expRsp, c08* _rxRsp) {
   char expRsp[MDM_MAX_RX_CMD_LEN];
   char rxRsp[MDM_MAX_RX_CMD_LEN];
   memset(expRsp, 0, MDM_MAX_RX_CMD_LEN);
@@ -369,7 +369,7 @@ bool CModem::GetAtResp(char* _expRsp, c08* _rxRsp) {
   return false;
 }
 /*******************************************************************************/
-void CModem::service(void) {
+void Cmodem::service(void) {
   c08* pstr = 0;
   c08* start = 0;
   c08* end = 0;
@@ -391,7 +391,7 @@ void CModem::service(void) {
   }
 }
 /*******************************************************************************/
-bool CModem::PowerOff(void) {
+bool Cmodem::PowerOff(void) {
   MDM_PWR_KEY_ON();
   _delay_ms(2000);
   MDM_PWR_KEY_OFF();
@@ -402,7 +402,7 @@ bool CModem::PowerOff(void) {
 }
 
 /*******************************************************************************/
-bool CModem::PowerOn(void) {
+bool Cmodem::PowerOn(void) {
   MDM_PWR_FET_ON();
   _delay_ms(200);
   MDM_PWR_KEY_ON();

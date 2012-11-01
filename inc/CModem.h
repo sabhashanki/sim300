@@ -98,7 +98,7 @@ typedef struct {
     c08 message[140];
 } sSMS;
 //*****************************************************************************
-class CModem {
+class Cmodem {
   private:
     eMdmState mdmState;
     eCmdState cmdState;
@@ -134,7 +134,7 @@ class CModem {
   public:
     Tfifo<u08> rxFifo;
     eSocketState ss;
-    CUART *pUart;
+    Cuart *pUart;
     u08 simcard_ok;
     u08 signal_ok;
     u08 connect_ok;
@@ -148,7 +148,7 @@ class CModem {
     u08 smstx_en;
     u08 gprsraw[MDM_MAX_RX_CMD_LEN];
     u08 gprsrx;
-    CModem(CUART * _pUart);
+    Cmodem(Cuart * _pUart);
     bool initModem(void);
     bool initIP(bool useDns);
     bool connect(void);

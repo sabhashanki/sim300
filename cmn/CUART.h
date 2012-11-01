@@ -43,7 +43,7 @@ extern "C" void SIG_USART3_TRANS(void) __attribute__ ((signal));
 extern "C" void SIG_USART3_RECV(void) __attribute__ ((signal));
 #endif
 
-class CUART {
+class Cuart {
   private:
     u16 rxOverflowCnt;
     u08 uartNr;
@@ -59,8 +59,8 @@ class CUART {
     u08 enable485;
     u08 healthy;
     u32 baudRate;
-    CUART(u08 uartNr, u32 baudRate, u16 bufSize = 128);
-    CUART(u08 uartNr, u32 baudRate, u16 bufSize, u08 enable485);
+    Cuart(u08 uartNr, u32 baudRate, u16 bufSize = 128);
+    Cuart(u08 uartNr, u32 baudRate, u16 bufSize, u08 enable485);
     u16 send(c08* buffer, u16 nBytes);
     u16 send(Tfifo<u08>* dat);
 #ifndef UART_MINIMAL

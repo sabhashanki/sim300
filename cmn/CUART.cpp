@@ -37,9 +37,9 @@
 /****************************************************************************************/
 #define UART_INACTIVE_TIME    1000  //us
 /****************************************************************************************/
-static CUART* pUart[4];
+static Cuart* pUart[4];
 /****************************************************************************************/
-CUART::CUART(u08 uartNr, u32 baudRate, u16 bufSize) {
+Cuart::Cuart(u08 uartNr, u32 baudRate, u16 bufSize) {
 	this->uartNr = uartNr;
 	this->baudRate = baudRate;
 	healthy = true;
@@ -79,7 +79,7 @@ CUART::CUART(u08 uartNr, u32 baudRate, u16 bufSize) {
 }
 
 /****************************************************************************************/
-CUART::CUART(u08 uartNr, u32 baudRate, u16 bufSize, u08 enable485) {
+Cuart::Cuart(u08 uartNr, u32 baudRate, u16 bufSize, u08 enable485) {
 	this->uartNr = uartNr;
 	healthy = true;
 	if (!rxFIFO.setBufSize(bufSize))
@@ -120,13 +120,13 @@ CUART::CUART(u08 uartNr, u32 baudRate, u16 bufSize, u08 enable485) {
 	//setFrame();
 }
 /****************************************************************************************/
-void CUART::clearRx(void) {
+void Cuart::clearRx(void) {
 	rxFIFO.clear();
 }
 /****************************************************************************************/
 // prints a null-terminated string stored in program ROM
 #ifndef UART_MINIMAL
-void CUART::sendStr_P(const prog_char str[])
+void Cuart::sendStr_P(const prog_char str[])
 {
   register char c;
   if (!str) return;
@@ -135,12 +135,12 @@ void CUART::sendStr_P(const prog_char str[])
     send(&c,1);
 }
 
-void CUART::sendStr(c08* str)
+void Cuart::sendStr(c08* str)
 {
   send(str,strlen(str));
 }
 
-u16 CUART::send_P(const prog_char buf[], u16 nBytes) {
+u16 Cuart::send_P(const prog_char buf[], u16 nBytes) {
   u16 res;
   u08 dat;
   if (!nBytes || !buf) {
@@ -154,7 +154,7 @@ u16 CUART::send_P(const prog_char buf[], u16 nBytes) {
   return res;
 }
 
-void CUART::uprintf(const char *__fmt, ...) {
+void Cuart::uprintf(const char *__fmt, ...) {
   c08 str[255];
   va_list arg;
   va_start(arg,__fmt);
@@ -165,7 +165,7 @@ void CUART::uprintf(const char *__fmt, ...) {
 
 #endif
 /****************************************************************************************/
-u16 CUART::send(c08* buffer, u16 nBytes) {
+u16 Cuart::send(c08* buffer, u16 nBytes) {
   u16 res;
   if (!nBytes || !buffer) {
     return 0;
@@ -196,7 +196,7 @@ u16 CUART::send(c08* buffer, u16 nBytes) {
   return res;
 }
 /****************************************************************************************/
-u16 CUART::send(Tfifo<u08>* dat) {
+u16 Cuart::send(Tfifo<u08>* dat) {
   u16 res;
   res = txFIFO.write(dat);
   switch (uartNr) {
@@ -224,16 +224,16 @@ u16 CUART::send(Tfifo<u08>* dat) {
   return res;
 }
 /****************************************************************************************/
-u16 CUART::space(void) {
+u16 Cuart::space(void) {
 	return txFIFO.space();
 }
 /****************************************************************************************/
-u16 CUART::rxnum(void) {
+u16 Cuart::rxnum(void) {
   return rxFIFO.used();
 }
 
 /****************************************************************************************/
-void CUART::setBaudRate(u32 baudRate) {
+void Cuart::setBaudRate(u32 baudRate) {
 	u16 u16UBRR;
 	ldiv_t xDiv;
 	this->baudRate = baudRate;
@@ -278,7 +278,7 @@ void CUART::setBaudRate(u32 baudRate) {
 	}
 }
 /****************************************************************************************/
-void CUART::setFrame(void) {
+void Cuart::setFrame(void) {
 	// Set frame format to 8 data bits, 1 stop bit and no parity
 	switch (uartNr) {
 	case 0:

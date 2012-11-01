@@ -81,7 +81,7 @@ typedef enum
   class CRFID
   {
   private:
-    CUART *pUart;
+    Cuart *pUart;
     CServer *server;
     eRxState rxState;
     u08 cntByte;
@@ -99,7 +99,7 @@ typedef enum
     u08 tableLen;
     sRfidTag *pTable;
     u32 timer;
-    CRFID(CUART *_pUart, u08 _tableLen,CServer *_server);
+    CRFID(Cuart *_pUart, u08 _tableLen,CServer *_server);
     void Service(void);
     void clearTable(void);
     u08 SearchTagID(u32 tagID, u08 *tableIndex);
