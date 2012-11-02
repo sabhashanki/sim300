@@ -15,8 +15,7 @@
 #include <avr/io.h>
 //****************************************************************************************
 #include "common.h"
-#include "avrlibtypes.h"
-#include "avrlibdefs.h"
+#include "types.h"
 #include "pin.h"
 #include "fifo.h"
 //****************************************************************************************

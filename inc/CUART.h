@@ -7,7 +7,6 @@
 #include <avr/interrupt.h>
 
 #include "common.h"
-#include "CFIFO.h"
 #include "fifo.h"
 
 //#define UART_MINIMAL

@@ -1,7 +1,7 @@
 #ifndef CRC_H
 #define CRC_H
 
-#include "avrlibtypes.h"
+#include "types.h"
 
 #define CRC8INIT	0x00
 #define CRC8POLY	0x18

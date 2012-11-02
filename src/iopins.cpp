@@ -2,8 +2,7 @@
 #include <avr/sleep.h>
 #include <avr/eeprom.h>
 /****************************************************************************************/
-#include "avrlibtypes.h"
-#include "avrlibdefs.h"
+#include "types.h"
 #include "common.h"
 /****************************************************************************************/
 #include "iopins.h"

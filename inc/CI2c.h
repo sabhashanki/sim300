@@ -1,8 +1,7 @@
 #ifndef I2C_H
 #define I2C_H
 
-#include "avrlibtypes.h"
-#include "avrlibdefs.h"
+#include "types.h"
 
 namespace I2C {
   // TWSR values (not bits)

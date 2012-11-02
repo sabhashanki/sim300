@@ -17,8 +17,7 @@
 #include <avr/interrupt.h>
 #include <string.h>
 /****************************************************************************************/
-#include "avrlibtypes.h"
-#include "avrlibdefs.h"
+#include "types.h"
 #include "Csocket.h"
 #include "iopins.h"
 #include "common.h"

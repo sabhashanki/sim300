@@ -5,8 +5,7 @@
 #include <avr/io.h>		// include I/O definitions (port names, pin names, etc)
 #include <avr/interrupt.h>	// include interrupt support
 /****************************************************************************************/
-#include "avrlibtypes.h"
-#include "avrlibdefs.h"
+#include "types.h"
 #include "CUART.h"
 #include "iopins.h"
 #include "common.h"

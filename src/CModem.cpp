@@ -6,8 +6,7 @@
 #include <util/atomic.h>
 
 #include "common.h"
-#include "avrlibtypes.h"
-#include "avrlibdefs.h"
+#include "types.h"
 #include "CUART.h"
 #include "CTimer.h"
 #include "CModem.h"

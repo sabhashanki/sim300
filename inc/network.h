@@ -1,8 +1,7 @@
 #ifndef NETWORK_H_
 #define NETWORK_H_
 /****************************************************************************************/
-#include "avrlibtypes.h"
-#include "nodeid.h"
+#include "types.h"
 #include "serial.h"
 /****************************************************************************************/
 namespace NS_CNETWORK {

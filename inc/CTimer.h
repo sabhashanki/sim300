@@ -8,7 +8,7 @@
 #ifndef CTIMER_H_
 #define CTIMER_H_
 
-#include "avrlibtypes.h"
+#include "types.h"
 
 #define TIMER_CLK_STOP        0x00  ///< Timer Stopped
 #define TIMER_CLK_DIV1        0x01  ///< Timer clocked at F_CPU

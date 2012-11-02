@@ -118,8 +118,7 @@ typedef double 			   f64;
 
 #define pc08 EEMEM c08
 
-
-
+typedef void (*voidFuncPtr)(void);
 
 typedef void (*u08FuncPtr)(u08);
 

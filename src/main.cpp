@@ -17,11 +17,7 @@
 #include "iopins.h"
 #include "CTimer.h"
 #include "CUART.h"
-#include "CRfid.h"
 #include "i2c.h"
-//#include "Crtc.h"
-#include "CServer.h"
-#include "CController.h"
 #include "Csocket.h"
 /****************************************************************************************/
 static volatile u32 isr_time = 0;
@@ -29,7 +25,6 @@ static volatile u32 time = 0;
 bool testSend = true;
 /****************************************************************************************/
 #define TICKER_PERIOD  139;
-using namespace CCONTROLLER;
 /****************************************************************************************/
 void TimeTicker(void);
 /****************************************************************************************/
