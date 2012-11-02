@@ -152,7 +152,7 @@ void Cnetwork::sendTestPkt() {
 
   strcpy((c08*) &strID, "1234");
   strcpy((c08*) &strGPS, "1.2 3.4");
-  strcpy((c08*) &strRFID, "X8974");
+  strcpy((c08*) &strRFID, "5555");
   status = COVER_OPEN;
 
   statusUpdate(strID, strGPS, strRFID, &status);

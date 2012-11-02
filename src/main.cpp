@@ -77,6 +77,7 @@ int main(void) {
     }
   }
   error: while (1) {
+    testSend = !testSend;
   }
   return 0;
 }
