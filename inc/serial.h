@@ -5,8 +5,8 @@
 //     Author: Wouter Cloete
 //    Sponsor: Firmlogik (Pty) Ltd
 /****************************************************************************************/
-#ifndef CSERIAL_H_
-#define CSERIAL_H_
+#ifndef SERIAL_H_
+#define SERIAL_H_
 /****************************************************************************************/
 #include "types.h"
 #include "fifo.h"
@@ -25,10 +25,10 @@ class Cserial {
     Tfifo<u08> txFIFO;
     Cserial(void);
     virtual void service(void);
-    virtual u16 send(u08* buffer, u16 nBytes) = 0;
+    virtual u16 write(u08* buffer, u16 nBytes) = 0;
     virtual bool start(void) = 0;
-    u16 receive(u08* buffer, u16 nBytes);
-    u16 receive(u08* buffer);
+    u16 read(u08* buffer, u16 nBytes);
+    u16 read(u08* buffer);
     void clearRx(void);
     void clearTx(void) {
       txFIFO.clear();

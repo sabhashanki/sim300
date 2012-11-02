@@ -60,8 +60,8 @@ class Cuart {
     u32 baudRate;
     Cuart(u08 uartNr, u32 baudRate, u16 bufSize = 128);
     Cuart(u08 uartNr, u32 baudRate, u16 bufSize, u08 enable485);
-    u16 send(c08* buffer, u16 nBytes);
-    u16 send(Tfifo<u08>* dat);
+    u16 write(c08* buffer, u16 nBytes);
+    u16 write(Tfifo<u08>* dat);
 #ifndef UART_MINIMAL
     u16 send_P(const prog_char buf[], u16 nBytes);
     void sendStr_P(const prog_char str[]);

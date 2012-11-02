@@ -1,50 +1,43 @@
-#ifndef NETWORK_H_
-#define NETWORK_H_
+#ifndef CNETWORK_H_
+#define CNETWORK_H_
 /****************************************************************************************/
 #include "types.h"
-#include "serial.h"
-/****************************************************************************************/
-namespace NS_CNETWORK {
-  typedef enum {
-    T_BOOL = 0, T_CHAR = 1, T_UCHAR = 2, T_STRING = 11
-  } eDataTyep;
+#include "uart.h"
+
+namespace CNETWORK {
   /****************************************************************************************/
-  typedef enum {
-    U2S_STATUSUPDATE = 1, U2S_OPEN_REQUEST,
-  } eMsgID;
+#define NUM_PAYLOAD_BYTES   128
   /****************************************************************************************/
-  typedef enum {
-    E_UNIT_ID = 0, E_UNIT_GPS = 1, E_COVER_RFID = 2, E_COVER_STATUS = 3
-  } eMsgType;
-  /****************************************************************************************/
-  typedef enum {
-    COVER_CLOSED = 0, COVER_OPEN = 1,
-  } eCoverStatus;
-  /****************************************************************************************/
+#define HEADER              0x5A
+  /*********************************** Packet struct definition ***************************/
   typedef struct {
-      u32 Length;
-      u08 MsgID;
+      u08 Header;
+      u08 Size;
+      u08 NotSize;
+      u08 DstNode;
+      u08 SrcNode;
+      u08 TransactNum;
+      u08 CRC;
   } sHeader;
   /****************************************************************************************/
-  typedef struct {
-      u08 elementID;
-      u08 type;
-      u08 strLen;
-  } sDataStringHeader;
-  /****************************************************************************************/
-  typedef struct {
-      u08 elementID;
-      u08 type;
-  } sDataBinHeader;
-  /****************************************************************************************/
   typedef enum {
-    STATE_RX_LENGTH, STATE_RX_MSG_ID, STATE_RX_PAYLOAD, STATE_PACKET_AVAILABLE
+    STATE_RX_HEADER,
+    STATE_RX_SIZE,
+    STATE_RX_NOT_SIZE,
+    STATE_RX_DST_NODE,
+    STATE_RX_SRC_NODE,
+    STATE_RX_TRANSACT_NUM,
+    STATE_RX_CRC,
+    STATE_RX_PAYLOAD,
+    STATE_SKIP_PAYLOAD,
+    STATE_PACKET_AVAILABLE
   } eState;
   /****************************************************************************************/
-  class Cnetwork {
+  class CNetwork {
     private:
-      static const u16 MAX_PACKET_LEN = 128;
-      Cserial* serial;
+      static const u08 BROADCAST_NODE_ID = 0;
+      static const u08 UNCONF_NODE_ID = 0;
+      Cuart* UART;
       u08 cntByte;
       u32 timeLimit;
       u16 baudRate;
@@ -56,32 +49,16 @@ namespace NS_CNETWORK {
       volatile u32 time;
       sHeader Header;
       u08* payload;
-      Cnetwork(Cserial* serial, u08 size = MAX_PACKET_LEN, u08 node = 0);
-      void statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus* status);
-      void setPayloadBufSize(u08 size);
+      CNetwork(Cuart* UART, u08 size);
+      CNetwork(Cuart* UART, u08 size, u08 node);
+      u08 setPayloadBufSize(u08 size);
       void service(void);
       u08 packetAvailable(void);
       void reset(void);
       void tx(u08 transactNum, u08 dstNode, u08* dat, u08 byteCnt);
       u08 nodeidGet(void);
       void nodeidSet(u08 ID);
-      u16 htons(u16* val) {
-        //u16 tmp;
-        *val = ((*val << 8) | (*val >> 8));
-        return *val;
-        //*val = tmp;
-      }
-      u32 htonl(u32* val) {
-        u16 tmpL, tmpR;
-        tmpL = *val >> 16;
-        tmpR = *val & 0x0000FFFF;
-        *val = (htons(&tmpL) | (u32) htons(&tmpR) << 16);
-        return *val;
-      }
-      void sendTestPkt();
-      /****************************************************************************************/
   };
+/****************************************************************************************/
 }
-using namespace NS_CNETWORK;
-
 #endif

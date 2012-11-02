@@ -2,7 +2,7 @@
 #include <util/delay.h>
 #include <util/atomic.h>
 
-#include "SL018.h"
+#include "sl018.h"
 
 using namespace I2C;
 

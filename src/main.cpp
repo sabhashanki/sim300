@@ -10,15 +10,15 @@
 #include <util/atomic.h>
 #include <util/delay.h>
 /****************************************************************************************/
-#include "network.h"
+#include "server.h"
 #include "main.h"
-#include "CModem.h"
+#include "modem.h"
 #include "common.h"
 #include "iopins.h"
-#include "CTimer.h"
-#include "CUART.h"
+#include "timer.h"
+#include "uart.h"
 #include "i2c.h"
-#include "Csocket.h"
+#include "socket.h"
 /****************************************************************************************/
 static volatile u32 isr_time = 0;
 static volatile u32 time = 0;
@@ -33,7 +33,7 @@ Cuart debugUart(0, 115200);
 Cuart modemUart(2, 115200);
 Cmodem modem(&modemUart);
 Csocket socket(&modem);
-Cnetwork server(&socket);
+Cserver server(&socket);
 //Ci2c i2c;
 //Crtc rtc(&i2c, 0xD0);
 //CServer Server(&Modem);

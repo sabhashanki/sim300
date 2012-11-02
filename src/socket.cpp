@@ -18,14 +18,11 @@
 #include <string.h>
 /****************************************************************************************/
 #include "types.h"
-#include "Csocket.h"
+#include "socket.h"
 #include "iopins.h"
 #include "common.h"
 /****************************************************************************************/
 using namespace CSOCKET;
-/****************************************************************************************/
-//u08 debugClose = false;
-//u08 debugSend = true;
 /****************************************************************************************/
 Csocket::Csocket(Cmodem* _modem, u16 _bufSize, bool _autoclose) {
   modem = _modem;
@@ -36,7 +33,6 @@ Csocket::Csocket(Cmodem* _modem, u16 _bufSize, bool _autoclose) {
   rxOverflowCnt = 0;
   txBusy = false;
   print = true;
-  //dst = dstIP;
   signal.setPeriod(1 / Csignal::tickBase);
   scheduler.attach(&signal);
   autoclose = _autoclose;
@@ -48,7 +44,7 @@ void Csocket::service(void) {
     switch (modem->ss) {
       case SOCK_ESTABLISHED:
         if (txFIFO.used() > 0) {
-          if (modem->send(&txFIFO)) {
+          if (modem->write(&txFIFO)) {
             idleTime = 0;
           }
         }
@@ -84,7 +80,7 @@ void Csocket::service(void) {
   }
 }
 /****************************************************************************************/
-u16 Csocket::send(u08* buffer, u16 nBytes) {
+u16 Csocket::write(u08* buffer, u16 nBytes) {
   u16 res;
   if (!nBytes || !buffer) {
     return 0;

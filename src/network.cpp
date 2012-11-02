@@ -18,143 +18,267 @@
 #define ATOMIC_BLOCK(val)
 #endif
 /****************************************************************************************/
-#include <CUART.h>
+#include "uart.h"
 #include "crc.h"
 #include "types.h"
 #include "network.h"
 /****************************************************************************************/
+using namespace CNETWORK;
+/****************************************************************************************/
 #undef DEBUG
 /****************************************************************************************/
 #ifndef WIN32
-#define EE_NODEID			(u08 *)(0x40)
+
+#define EE_NODEID			(u08 *)(0x01)
+
 #else
 AnsiString str;
 #endif
 /****************************************************************************************/
-Cnetwork::Cnetwork(Cserial* _serial, u08 _size, u08 _node) {
-  this->serial = _serial;
-  this->NodeId = _node;
-  State = STATE_RX_LENGTH;
+CNetwork::CNetwork(Cuart* UART, u08 size) {
+  this->UART = UART;
+  this->NodeId = nodeidGet();
+  State = STATE_RX_HEADER;
   time = 0;
   timeLimit = 0;
-  payloadSize = _size;
-  payload = NULL;
+  payloadSize = 0;
+  payload = 0;
   healthy = true;
-  baudRate = serial->getBaudRate();
-  setPayloadBufSize(_size);
+  baudRate = this->UART->baudRate;
+  setPayloadBufSize(size);
 }
 /****************************************************************************************/
-void Cnetwork::setPayloadBufSize(u08 size) {
-  while (payload == NULL) {
-    payload = (u08*) malloc(size);
-  }
+CNetwork::CNetwork(Cuart* UART, u08 size, u08 node) {
+  this->UART = UART;
+  nodeidSet(node);
+  this->NodeId = node;
+  State = STATE_RX_HEADER;
+  time = 0;
+  timeLimit = 0;
+  payloadSize = 0;
+  payload = 0;
+  healthy = true;
+  baudRate = this->UART->baudRate;
+  setPayloadBufSize(size);
 }
 /****************************************************************************************/
-void Cnetwork::service(void) {
-  serial->service();
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  {
-    if (time > timeLimit) {
-      State = STATE_RX_LENGTH;
-      time = 0;
-    }
+u08 CNetwork::setPayloadBufSize(u08 size) {
+  payload = (u08*) malloc(size);
+  if (payload == NULL) {
+    healthy = false;
+    return false;
   }
+  payloadSize = size;
+  return true;
+}
+/****************************************************************************************/
+void CNetwork::service(void)
+{
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+	{
+		if (time > timeLimit) {
+		  State = STATE_RX_HEADER;
+		  time = 0;
+	    }
+	}
   switch (State) {
-    case STATE_RX_LENGTH:
-      if (serial->rxnum() > 4) {
-        serial->receive((u08*) &Header.Length, 4);
-        htonl(&Header.Length);
-        if (Header.Length <= MAX_PACKET_LEN) {
-          State = STATE_RX_MSG_ID;
+    case STATE_RX_HEADER:
+      if (UART->rxFIFO.read(&Header.Header, 1) == 1) {
+        if (Header.Header == HEADER) {
+          cntByte = 0;
+          State = STATE_RX_SIZE;
+          ATOMIC_BLOCK(ATOMIC_RESTORESTATE){ time = 0;}
+          timeLimit = 2 * (sizeof(sHeader) * 10 * 1000000) / (baudRate);
         }
       }
       break;
-    case STATE_RX_MSG_ID:
-      if (serial->receive(&Header.MsgID, 1) == 1) {
-        cntByte = 1;
-        State = STATE_RX_PAYLOAD;
+    case STATE_RX_SIZE:
+      if (UART->rxFIFO.read(&Header.Size, 1) == 1) {
+        State = STATE_RX_NOT_SIZE;
+      }
+      break;
+    case STATE_RX_NOT_SIZE:
+      if (UART->rxFIFO.read(&Header.NotSize, 1) == 1) {
+        if ((Header.Size ^ Header.NotSize) == 0xFF) {
+          State = STATE_RX_DST_NODE;
+        } else {
+          State = STATE_RX_HEADER;
+        }
+      }
+      break;
+    case STATE_RX_DST_NODE:
+      if (UART->rxFIFO.read(&Header.DstNode, 1) == 1) {
+        State = STATE_RX_SRC_NODE;
+      }
+      break;
+    case STATE_RX_SRC_NODE:
+      if (UART->rxFIFO.read(&Header.SrcNode, 1) == 1) {
+        State = STATE_RX_TRANSACT_NUM;
+      }
+      break;
+    case STATE_RX_TRANSACT_NUM:
+      if (UART->rxFIFO.read(&Header.TransactNum, 1) == 1) {
+        State = STATE_RX_CRC;
+      }
+      break;
+    case STATE_RX_CRC:
+      if (UART->rxFIFO.read(&Header.CRC, 1) == 1) {
+        cntByte = 0;
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE){ time = 0;}
+        timeLimit = 2 * (Header.Size * 10 * 1000000) / (baudRate);
+        if (Header.DstNode == NodeId || Header.DstNode == BROADCAST_NODE_ID) {
+          State = STATE_RX_PAYLOAD;
+        } else {
+          State = STATE_SKIP_PAYLOAD;
+        }
+      }
+      break;
+    case STATE_SKIP_PAYLOAD:
+      if (UART->rxFIFO.read(&payload[0], 1) == 1) {
+        cntByte++;
+        if (cntByte == Header.Size) {
+          State = STATE_RX_HEADER;
+        }
       }
       break;
     case STATE_RX_PAYLOAD:
-      if (serial->receive(&payload[cntByte], 1) == 1) {
+      if (UART->rxFIFO.read(&payload[cntByte], 1) == 1) {
         cntByte++;
-        if (cntByte == Header.Length) {
-          State = STATE_PACKET_AVAILABLE;
+        if (cntByte == Header.Size) {
+          u08 calcCrc;
+          calcCrc = crc8((u08*) payload, Header.Size);
+          if ((calcCrc == Header.CRC) && (Header.DstNode == NodeId
+              || Header.DstNode == BROADCAST_NODE_ID)) {
+            State = STATE_PACKET_AVAILABLE;
+#ifdef WIN32
+      str = "HDR:0x" + IntToHex(*((u08 *)&Header + 0),2);
+      str = str +  " Len:" + IntToStr(Header.Size);
+      str = str +  " Dst:0x" + IntToHex(Header.DstNode,2);
+      str = str +  " Src:0x" + IntToHex(Header.SrcNode,2);
+      str = str +  " Num:" + IntToStr(Header.TransactNum);
+      str = str +  " CRC:0x" + IntToHex(Header.CRC,2);
+      fmMain->RxCnt->Caption = IntToStr(fmMain->rxcnt++);
+      /*
+      for(int i=0;i<sizeof(Header);i++)
+      {
+        str = str + " " + IntToHex(*((u08 *)&Header + i),2);
+      }
+      */
+      fmMain->RxMemo->Lines->Add(str);
+      str = "DAT:";
+      for(int i=0;i<cntByte;i++)
+      {
+        str = str + " " + IntToHex(payload[i],2);
+      }
+      fmMain->RxMemo->Lines->Add(str);
+#endif
+
+            //timeLimit = 500000;
+          } else {
+            State = STATE_RX_HEADER;
+          }
         }
       }
       break;
     case STATE_PACKET_AVAILABLE:
-      ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-      {
-        time = 0;
-      }
+      ATOMIC_BLOCK(ATOMIC_RESTORESTATE){ time = 0;}
       break;
     default:
-      State = STATE_RX_LENGTH;
+      State = STATE_RX_HEADER;
       break;
   }
 }
 /****************************************************************************************/
-void Cnetwork::reset(void) {
-  State = STATE_RX_LENGTH;
+void CNetwork::reset(void) {
+  State = STATE_RX_HEADER;
 }
 /****************************************************************************************/
-u08 Cnetwork::packetAvailable(void) {
-  if (State == STATE_PACKET_AVAILABLE) {
+u08 CNetwork::packetAvailable(void) {
+  if(State == STATE_PACKET_AVAILABLE)
+  {
     return true;
   }
   return false;
 }
 /****************************************************************************************/
-void Cnetwork::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus* status) {
-  sHeader Header;
-  sDataStringHeader strHdr;
-  sDataBinHeader binHdr;
+void CNetwork::tx(u08 transactNum, u08 dstNode, u08* Dat, u08 byteCnt) {
 
-  reset();
-  serial->clearTx();
-  serial->clearRx();
-  Header.Length = 13 + strlen((c08*) strID) + strlen((c08*) strGPS)
-      + strlen((c08*) strRFID);
-  htonl(&Header.Length);
-  Header.MsgID = U2S_STATUSUPDATE;
-  serial->send((u08*) &Header, sizeof(Header));
-// E_UNIT_ID
-  strHdr.elementID = E_UNIT_ID;
-  strHdr.type = T_STRING;
-  strHdr.strLen = strlen((c08*) strID);
-  serial->send((u08*) &strHdr, sizeof(sDataStringHeader));
-  serial->sendStr((c08*) strID);
-// E_UNIT_GPS
-  strHdr.elementID = E_UNIT_GPS;
-  strHdr.type = T_STRING;
-  strHdr.strLen = strlen((c08*) strGPS);
-  serial->send((u08*) &strHdr, sizeof(sDataStringHeader));
-  serial->sendStr((c08*) strGPS);
-// E_COVER_RFID
-  strHdr.elementID = E_COVER_RFID;
-  strHdr.type = T_STRING;
-  strHdr.strLen = strlen((c08*) strRFID);
-  serial->send((u08*) &strHdr, sizeof(sDataStringHeader));
-  serial->sendStr((c08*) strRFID);
-// E_COVER_STATUS
-  binHdr.elementID = E_COVER_STATUS;
-  binHdr.type = T_UCHAR;
-  serial->send((u08*) &binHdr, sizeof(sDataBinHeader));
-  serial->send((u08*) status, 1);
+  sHeader Header;
+  Header.Header = HEADER;
+  Header.Size = byteCnt;
+  Header.NotSize = (byteCnt ^ 0xFF);
+  Header.DstNode = dstNode;
+  Header.SrcNode = NodeId;
+  Header.TransactNum = transactNum;
+  Header.CRC = crc8(Dat, byteCnt);
+  UART->write((c08*) &Header, sizeof(Header));
+  UART->write((c08*)Dat, byteCnt);
+
 }
 /****************************************************************************************/
-void Cnetwork::sendTestPkt() {
-  u08 strID[32];
-  u08 strGPS[32];
-  u08 strRFID[32];
-  eCoverStatus status;
+#define EE_MAX	32
+u08 CNetwork::nodeidGet(void) {
+#ifdef WIN32
+  return MASTER_NODE_ID;
+#else
+  	u08 block[EE_MAX];
+  	u08 i,j,big,id;
+  	u08 cnt[EE_MAX];
 
-  strcpy((c08*) &strID, "1234");
-  strcpy((c08*) &strGPS, "1.2 3.4");
-  strcpy((c08*) &strRFID, "5555");
-  status = COVER_OPEN;
+  	memset(cnt,0,EE_MAX);
 
-  statusUpdate(strID, strGPS, strRFID, &status);
+  	cli();
+  	for(i=0;i<EE_MAX;i++)
+  	{
+  		block[i] = eeprom_read_byte(EE_NODEID+i);
+  	}
 
+  	for(i=0;i<EE_MAX;i++)
+  	{
+  		for(j=0;j<EE_MAX;j++)
+  		{
+  			if(block[j]==block[i])
+  				cnt[i]++;
+  		}
+  	}
+  	id=0;
+  	big = 0;
+  	for(i=0;i<EE_MAX;i++)
+  	{
+    	  if(cnt[i] > big)
+    	  {
+    		big = cnt[i];
+    		id = block[i];
+    	  }
+  	}
+
+  	for(i=0;i<EE_MAX;i++)
+  	{
+  	  /* reset the node ID assume less than five means a corrupt value */
+  	  if(cnt[i] < 5)
+  	  {
+  		eeprom_write_byte((EE_NODEID)+i,id);
+  	  }
+  	}
+  	sei();
+
+  	return id;
+#endif
 }
+/****************************************************************************************/
+void CNetwork::nodeidSet(u08 ID) {
+	u08 i;
+	if(ID < 100 || ID == UNCONF_NODE_ID){
+	  this->NodeId = ID;
+	}
+	else{
+	  return;
+	}
+	cli();
+	for(i=0;i<32;i++)
+	{
+		eeprom_write_byte((EE_NODEID)+i,ID);
+	}
+	sei();
+}
+/****************************************************************************************/

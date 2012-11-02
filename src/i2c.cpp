@@ -17,7 +17,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "common.h"
-#include "CI2c.h"
+#include "i2c.h"
 
 // Standard I2C bit rates are:
 // 100KHz for slow speed
@@ -148,8 +148,9 @@ void CI2C::masterSend(u08 deviceAddr, u08 length, u08* data) {
   state = MASTER_TX;
   // save data
   deviceAddrRW = (deviceAddr & 0xFE); // RW cleared: write operation
-  for (i = 0; i < length; i++)
+  for (i = 0; i < length; i++){
     sendData[i] = *data++;
+  }
   sendDataIndex = 0;
   sendDataLength = length;
   // send start condition

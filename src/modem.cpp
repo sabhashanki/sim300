@@ -7,9 +7,9 @@
 
 #include "common.h"
 #include "types.h"
-#include "CUART.h"
-#include "CTimer.h"
-#include "CModem.h"
+#include "uart.h"
+#include "timer.h"
+#include "modem.h"
 #include "iopins.h"
 #include "main.h"
 
@@ -273,11 +273,11 @@ void Cmodem::ServerSetIP(c08* _IP, c08 *_port, bool _usedns) {
 }
 
 /*******************************************************************************/
-bool Cmodem::send(u08* dat, u16 len) {
+bool Cmodem::write(u08* dat, u16 len) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
   if (ss == SOCK_ESTABLISHED) {
     if (HandleAtCmd("AT+CIPSEND\r", AT_RDY)) {
-      pUart->send((c08*) dat, len);
+      pUart->write((c08*) dat, len);
       pUart->sendStr_P(PSTR("\x1A\r"));
       return true;
     }
@@ -285,11 +285,11 @@ bool Cmodem::send(u08* dat, u16 len) {
   return false;
 }
 /*******************************************************************************/
-bool Cmodem::send(Tfifo<u08>* dat) {
+bool Cmodem::write(Tfifo<u08>* dat) {
   if (ss == SOCK_ESTABLISHED) {
     pUart->clear();
     if (HandleAtCmd("AT+CIPSEND\r", AT_RDY)) {
-      pUart->send(dat);
+      pUart->write(dat);
       pUart->sendStr_P(PSTR("\x1A\r"));
       return true;
     }

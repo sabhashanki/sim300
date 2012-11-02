@@ -6,7 +6,7 @@
 #include <avr/interrupt.h>	// include interrupt support
 /****************************************************************************************/
 #include "types.h"
-#include "CUART.h"
+#include "uart.h"
 #include "iopins.h"
 #include "common.h"
 
@@ -131,12 +131,12 @@ void Cuart::sendStr_P(const prog_char str[])
   if (!str) return;
   // print the string until the null-terminator
   while((c = pgm_read_byte(str++)))
-    send(&c,1);
+    write(&c,1);
 }
 
 void Cuart::sendStr(c08* str)
 {
-  send(str,strlen(str));
+  write(str,strlen(str));
 }
 
 u16 Cuart::send_P(const prog_char buf[], u16 nBytes) {
@@ -159,12 +159,12 @@ void Cuart::uprintf(const char *__fmt, ...) {
   va_start(arg,__fmt);
   vsprintf(str,__fmt,arg);
   va_end(arg);
-  send(str,strlen(str));
+  write(str,strlen(str));
 }
 
 #endif
 /****************************************************************************************/
-u16 Cuart::send(c08* buffer, u16 nBytes) {
+u16 Cuart::write(c08* buffer, u16 nBytes) {
   u16 res;
   if (!nBytes || !buffer) {
     return 0;
@@ -195,7 +195,7 @@ u16 Cuart::send(c08* buffer, u16 nBytes) {
   return res;
 }
 /****************************************************************************************/
-u16 Cuart::send(Tfifo<u08>* dat) {
+u16 Cuart::write(Tfifo<u08>* dat) {
   u16 res;
   res = txFIFO.write(dat);
   switch (uartNr) {

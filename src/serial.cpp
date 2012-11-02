@@ -29,11 +29,11 @@ void Cserial::setBufSize(u16 bufSize) {
   txFIFO.setBufSize(bufSize);
 }
 /****************************************************************************************/
-u16 Cserial::receive(u08* buffer, u16 nBytes) {
+u16 Cserial::read(u08* buffer, u16 nBytes) {
   return rxFIFO.read(buffer, nBytes);
 }
 /****************************************************************************************/
-u16 Cserial::receive(u08* buffer) {
+u16 Cserial::read(u08* buffer) {
   return rxFIFO.read(buffer);
 }
 /****************************************************************************************/
@@ -51,7 +51,7 @@ void Cserial::uprintf(const char *__fmt, ...) {
   va_start(arg,__fmt);
   vsprintf(str, __fmt, arg);
   va_end(arg);
-  send((u08*)str, strlen(str));
+  write((u08*)str, strlen(str));
 }
 /****************************************************************************************/
 void Cserial::sendStr_P(const prog_char str[]) {
@@ -60,11 +60,11 @@ void Cserial::sendStr_P(const prog_char str[]) {
     return;
   // print the string until the null-terminator
   while ((c = pgm_read_byte(str++)))
-    send((u08*)&c, 1);
+    write((u08*)&c, 1);
 }
 /****************************************************************************************/
 void Cserial::sendStr(c08* str) {
-  send((u08*)str, strlen(str));
+  write((u08*)str, strlen(str));
 }
 /****************************************************************************************/
 u16 Cserial::send_P(const prog_char buf[], u16 nBytes) {

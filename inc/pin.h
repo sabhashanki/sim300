@@ -32,11 +32,14 @@ class Cpin {
     u16 pinAdr;
   public:
     Cpin(u16 portBaseAdr, u08 pinNumber, ePinDir dir, bool pullup = false, bool activeLow = false);
-    bool isEnabled(void);
-    bool isDisabled(void);
-    void setEnable(void);
-    void setDisable(void);
+    bool isSet(void);
+    bool isClr(void);
+    void set(void);
+    void clr(void);
+    void setlogic(bool _activeLow);
     void toggle(void);
+    void setDir(ePinDir dir);
+    void pullup(bool _pullup);
 };
 //****************************************************************************************
 #endif

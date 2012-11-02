@@ -22,7 +22,7 @@
 #include "pin.h"
 #include "serial.h"
 #include "scheduler.h"
-#include "CModem.h"
+#include "modem.h"
 /****************************************************************************************/
 namespace CSOCKET {
   const u32 LIFETIME = (5); // 5 Second timeout
@@ -40,8 +40,8 @@ class Csocket: public Cserial {
   public:
     Csocket(Cmodem* modem, u16 bufSize = 128, bool _autoclose = true);
     void service(void);
-    u16 send(u08* buffer, u16 nBytes);
-    u16 receive(u08* buffer, u16 nBytes);
+    u16 write(u08* buffer, u16 nBytes);
+    u16 read(u08* buffer, u16 nBytes);
     bool start(void);
     void enableAutoclose();
     void disableAutoclose() {

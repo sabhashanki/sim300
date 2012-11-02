@@ -4,7 +4,7 @@
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 #include "common.h"
-#include "CUART.h"
+#include "uart.h"
 #include "fifo.h"
 
 //namespace CMODEM
@@ -161,8 +161,8 @@ class Cmodem {
     eMdmState GetStateModem(void);
     bool GetSignalQuality(void);
     bool SendSMS(char *PhoneNumber, char *Message);
-    bool send(u08* dat, u16 len);
-    bool send(Tfifo<u08>* dat);
+    bool write(u08* dat, u16 len);
+    bool write(Tfifo<u08>* dat);
     void ServerSetIP(c08* _IP, c08 *_port, bool _usedns);
     void GetUnSolicited(void);
 };
