@@ -373,17 +373,23 @@ void Cmodem::service(void) {
   c08* pstr = 0;
   c08* start = 0;
   c08* end = 0;
-  u08 len;
+  u08 len, lenF;
+  c08 strLen[4];
+  u08 buf[MDM_MAX_RX_CMD_LEN];
+
   memset(gprsraw, 0, MDM_MAX_RX_CMD_LEN);
-  if (pUart->rxFIFO.read(gprsraw, 0, true)) {
+  lenF = pUart->rxFIFO.read(gprsraw, 0, true);
+  if (lenF) {
     pstr = strstr_P((c08*) gprsraw, PSTR("+IPD"));
     if (pstr != 0) {
-      start = strchr((c08*) gprsraw, '*');
-      if (start) {
-        end = strchr((c08*) gprsraw, '#');
-        if (end) {
-          len = end - start;
-          rxFifo.write((u08*) start, len);
+      start = strchr((c08*) pstr, 'D');
+      end = strchr((c08*) pstr, ':');
+      if (start && end) {
+        strncpy(strLen, start + 1, end - start - 1);
+        len = atoi(strLen);
+        if ((lenF - (end - (c08*) gprsraw + 1)) >= len) {
+          memcpy(buf, end + 1, len);
+          rxFifo.write(buf, len);
           pUart->clearRx();
         }
       }

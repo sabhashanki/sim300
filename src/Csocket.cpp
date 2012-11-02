@@ -28,7 +28,7 @@ using namespace CSOCKET;
 //u08 debugClose = false;
 //u08 debugSend = true;
 /****************************************************************************************/
-Csocket::Csocket(Cmodem* _modem, u16 _bufSize) {
+Csocket::Csocket(Cmodem* _modem, u16 _bufSize, bool _autoclose) {
   modem = _modem;
   this->socketNr = socketNr;
   this->port = port;
@@ -40,7 +40,7 @@ Csocket::Csocket(Cmodem* _modem, u16 _bufSize) {
   //dst = dstIP;
   signal.setPeriod(1 / Csignal::tickBase);
   scheduler.attach(&signal);
-  autoclose = false;
+  autoclose = _autoclose;
 }
 /****************************************************************************************/
 void Csocket::service(void) {
@@ -55,6 +55,7 @@ void Csocket::service(void) {
         }
         if ((len = modem->rxFifo.used()) > 0) {
           modem->rxFifo.read(&rxFIFO);
+          modem->disconnect();
           idleTime = 0;
         }
         if (autoclose) {
