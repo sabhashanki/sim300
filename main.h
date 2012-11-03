@@ -20,6 +20,7 @@
 #include "keypad.h"
 #include "modem.h"
 #include "server.h"
+#include "sl018.h"
 #include "socket.h"
 #include "timer.h"
 #include "uart.h"

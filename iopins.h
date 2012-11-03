@@ -208,5 +208,5 @@
 #define PWR_SWITCH_ON()       sbi(POWER_CTRL_PORT,POWER_CTRL_PIN)
 #define PWR_SWITCH_OFF()      cbi(POWER_CTRL_PORT,POWER_CTRL_PIN)
 
-void InitIOPins(void);
+void init(void);
 #endif

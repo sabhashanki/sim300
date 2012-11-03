@@ -33,7 +33,7 @@ typedef struct{
 }sSL018;
 
 
-class SL018
+class Csl018
 {
 	public:
 		static const u08 VERSION = 1;
@@ -81,10 +81,10 @@ class SL018
 		sSL018 sl018;
 
     u32 volatile timer;
-    CI2C *i2c;
+    Ci2c *i2c;
     Cpin *stpin;
 	public:
-		SL018(CI2C *_i2c, Cpin *_stpin, u08 _addr);
+		Csl018(Ci2c *_i2c, Cpin *_stpin, u08 _addr);
 		bool read(void);
 		bool present() { return(stpin->isEnabled()); };
 		c08* tagName(u08 type);

@@ -27,9 +27,9 @@ using namespace I2C;
 
 #undef I2C_DEBUG
 
-static CI2C* devices[4];
+static Ci2c* devices[4];
 
-CI2C::CI2C(void) {
+Ci2c::Ci2c(void) {
   // set pull-up resistors on I2C bus pins
   // TODO: should #ifdef these
 /*
@@ -61,7 +61,7 @@ CI2C::CI2C(void) {
   devices[0] = this;
 }
 
-void CI2C::setBitrate(u16 bitrateKHz) {
+void Ci2c::setBitrate(u16 bitrateKHz) {
   u08 bitrate_div;
   // set i2c bitrate
   // SCL freq = F_CPU/(16+2*TWBR))
@@ -79,46 +79,46 @@ void CI2C::setBitrate(u16 bitrateKHz) {
   TWBR = bitrate_div;
 }
 
-void CI2C::setLocalDeviceAddr(u08 deviceAddr, u08 genCallEn) {
+void Ci2c::setLocalDeviceAddr(u08 deviceAddr, u08 genCallEn) {
   // set local device address (used in slave mode only)
   TWAR = ((deviceAddr & 0xFE) | (genCallEn ? 1 : 0));
 }
 
-void CI2C::setSlaveReceiveHandler(void(*slaveRx_func)(u08 receiveDataLength,
+void Ci2c::setSlaveReceiveHandler(void(*slaveRx_func)(u08 receiveDataLength,
     u08* recieveData)) {
   slaveReceive = slaveRx_func;
 }
 
-void CI2C::setSlaveTransmitHandler(u08(*slaveTx_func)(
+void Ci2c::setSlaveTransmitHandler(u08(*slaveTx_func)(
     u08 transmitDataLengthMax, u08* transmitData)) {
   slaveTransmit = slaveTx_func;
 }
 
-void CI2C::sendStart(void) {
+void Ci2c::sendStart(void) {
   // send start condition
   //outb(TWCR, (inb(TWCR)&TWCR_CMD_MASK)|BV(TWINT)|BV(TWSTA));
   TWCR = (TWCR & TWCR_CMD_MASK) | BV(TWINT) | BV(TWSTA);
 }
 
-void CI2C::sendStop(void) {
+void Ci2c::sendStop(void) {
   // transmit stop condition
   // leave with TWEA on for slave receiving
   outb(TWCR, (inb(TWCR)&TWCR_CMD_MASK)|BV(TWINT)|BV(TWEA)|BV(TWSTO));
 }
 
-void CI2C::waitForComplete(void) {
+void Ci2c::waitForComplete(void) {
   // wait for i2c interface to complete operation
   while (!(inb(TWCR)& BV(TWINT)) );
 }
 
-void CI2C::sendByte(u08 data) {
+void Ci2c::sendByte(u08 data) {
   // save data to the TWDR
   outb(TWDR, data);
   // begin send
   outb(TWCR, (inb(TWCR)&TWCR_CMD_MASK)|BV(TWINT));
 }
 
-void CI2C::receiveByte(u08 ackFlag) {
+void Ci2c::receiveByte(u08 ackFlag) {
   // begin receive over i2c
   if (ackFlag) {
     // ackFlag = TRUE: ACK the recevied data
@@ -129,17 +129,17 @@ void CI2C::receiveByte(u08 ackFlag) {
   }
 }
 
-u08 CI2C::getReceivedByte(void) {
+u08 Ci2c::getReceivedByte(void) {
   // retieve received data byte from i2c TWDR
   return (inb(TWDR));
 }
 
-u08 CI2C::getStatus(void) {
+u08 Ci2c::getStatus(void) {
   // retieve current i2c status from i2c TWSR
   return (inb(TWSR));
 }
 
-void CI2C::masterSend(u08 deviceAddr, u08 length, u08* data) {
+void Ci2c::masterSend(u08 deviceAddr, u08 length, u08* data) {
   u08 i;
   // wait for interface to be ready
   while (state)
@@ -157,7 +157,7 @@ void CI2C::masterSend(u08 deviceAddr, u08 length, u08* data) {
   sendStart();
 }
 
-void CI2C::masterReceive(u08 deviceAddr, u08 length, u08* data) {
+void Ci2c::masterReceive(u08 deviceAddr, u08 length, u08* data) {
   u08 i;
   // wait for interface to be ready
   while (state)
@@ -178,7 +178,7 @@ void CI2C::masterReceive(u08 deviceAddr, u08 length, u08* data) {
     *data++ = receiveData[i];
 }
 #ifdef NO_INTERRUPTS
-u08 CI2C::masterSendNI(u08 deviceAddr, u08 length, u08* data)
+u08 Ci2c::masterSendNI(u08 deviceAddr, u08 length, u08* data)
 {
   u08 retval = I2C_OK;
 
@@ -223,7 +223,7 @@ u08 CI2C::masterSendNI(u08 deviceAddr, u08 length, u08* data)
   return retval;
 }
 
-u08 CI2C::masterReceiveNI(u08 deviceAddr, u08 length, u08 *data)
+u08 Ci2c::masterReceiveNI(u08 deviceAddr, u08 length, u08 *data)
 {
   u08 retval = I2C_OK;
 
@@ -275,7 +275,7 @@ u08 CI2C::masterReceiveNI(u08 deviceAddr, u08 length, u08 *data)
 }
 #endif
 
-void CI2C::service() {
+void Ci2c::service() {
   // read status bits
   u08 status = inb(TWSR) & TWSR_STATUS_MASK;
 
@@ -508,6 +508,6 @@ SIGNAL(SIG_2WIRE_SERIAL)
   devices[0]->service();
 }
 
-eState CI2C::getState(void) {
+eState Ci2c::getState(void) {
   return state;
 }

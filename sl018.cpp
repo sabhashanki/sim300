@@ -7,14 +7,14 @@
 using namespace I2C;
 
 /*****************************************************************************************/
-SL018::SL018(CI2C *_i2c, Cpin *_stpin, u08 _addr) {
+Csl018::Csl018(Ci2c *_i2c, Cpin *_stpin, u08 _addr) {
   i2c = _i2c;
   address = _addr;
   stpin = _stpin;
 }
 
 /*****************************************************************************************/
-bool SL018::reset(void) {
+bool Csl018::reset(void) {
   sl018.uSL018.wr.cmd = CMD_RESET;
   sl018.uSL018.wr.len = 1;
   i2c->masterSend(address, sl018.uSL018.wr.len, sl018.uSL018.data);
@@ -24,7 +24,7 @@ bool SL018::reset(void) {
 }
 
 /*****************************************************************************************/
-bool SL018::read(void){
+bool Csl018::read(void){
   u08 size;
   sl018.uSL018.wr.cmd = CMD_SELECT;
   sl018.uSL018.wr.len = 2;
@@ -45,7 +45,7 @@ bool SL018::read(void){
 }
 
 /*****************************************************************************************/
-c08* SL018::getErrorMessage(void) {
+c08* Csl018::getErrorMessage(void) {
   switch (errorCode) {
     case 0:
       return "OK";
@@ -79,7 +79,7 @@ c08* SL018::getErrorMessage(void) {
 /** Authenticate with transport key (0xFFFFFFFFFFFF).
  *	@param sector Sector number
  */
-bool SL018::login(u08 sector) {
+bool Csl018::login(u08 sector) {
   sl018.uSL018.wr.cmd = CMD_LOGIN;
   sl018.uSL018.wr.len = 9;
   sl018.uSL018.wr.data[0] = sector;
@@ -104,7 +104,7 @@ bool SL018::login(u08 sector) {
  *	@param keyType Which key to use: 0xAA for key A or 0xBB for key B
  *	@param key Key value (6 bytes)
  */
-bool SL018::login(u08 sector, u08 keyType, u08 key[6]) {
+bool Csl018::login(u08 sector, u08 keyType, u08 key[6]) {
   sl018.uSL018.wr.cmd = CMD_LOGIN;
   sl018.uSL018.wr.len = 9;
   sl018.uSL018.wr.data[0] = sector;
@@ -126,7 +126,7 @@ bool SL018::login(u08 sector, u08 keyType, u08 key[6]) {
 /*****************************************************************************************
 	Read a data block of 16 bytes
 *****************************************************************************************/
-bool SL018::readBlock(u08 block,u08 *_data) {
+bool Csl018::readBlock(u08 block,u08 *_data) {
   data[0] = CMD_READ16;
   i2c->masterSend(address, 0x02, data);
   clearTime();
@@ -142,7 +142,7 @@ bool SL018::readBlock(u08 block,u08 *_data) {
 /*****************************************************************************************
   Read a page of 8 bytes
 *****************************************************************************************/
-bool SL018::readPage(u08 page, u08 *_data) {
+bool Csl018::readPage(u08 page, u08 *_data) {
   data[0] = CMD_READ4;
   data[1] = page;
   i2c->masterSend(address, 2, data);
@@ -166,7 +166,7 @@ bool SL018::readPage(u08 page, u08 *_data) {
  *	@param message string of 16 characters (binary safe)
  */
 
-void SL018::writeBlock(u08 block, const c08* message) {
+void Csl018::writeBlock(u08 block, const c08* message) {
   len = 18;
   cmd = CMD_WRITE16;
   data[0] = block;
@@ -193,7 +193,7 @@ void SL018::writeBlock(u08 block, const c08* message) {
  *	@param page Page number
  *	@param message String of 4 characters
  */
-void SL018::writePage(u08 page, const c08* message) {
+void Csl018::writePage(u08 page, const c08* message) {
   data[0] = 6;
   data[1] = CMD_WRITE4;
   data[2] = page;
@@ -207,7 +207,7 @@ void SL018::writePage(u08 page, const c08* message) {
  *	@param sector Sector number
  *	@param key Key value (6 bytes)
  */
-void SL018::writeKey(u08 sector, u08 key[6]) {
+void Csl018::writeKey(u08 sector, u08 key[6]) {
   data[0] = 8;
   data[1] = CMD_WRITE_KEY;
   data[2] = sector;
@@ -220,7 +220,7 @@ void SL018::writeKey(u08 sector, u08 key[6]) {
  *
  *	@param on	true for on, false for off
  */
-void SL018::led(bool on) {
+void Csl018::led(bool on) {
   sl018.uSL018.wr.len = 3;
   sl018.uSL018.wr.cmd = CMD_SET_LED;
   sl018.uSL018.wr.data[0] = on;
@@ -232,7 +232,7 @@ void SL018::led(bool on) {
  *	@param	type numeric tag type
  *	@return	Human-readable tag name as null-terminated string
 ****************************************************************************************/
-c08* SL018::tagName(u08 type) {
+c08* Csl018::tagName(u08 type) {
   switch (type) {
     case 1:
       return "Mifare 1K";
@@ -252,14 +252,14 @@ c08* SL018::tagName(u08 type) {
 }
 
 /****************************************************************************************/
-void SL018::clearTime(void) {
+void Csl018::clearTime(void) {
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     timer = 0;
   }
 }
 
 /****************************************************************************************/
-u32 SL018::getTime(void) {
+u32 Csl018::getTime(void) {
   u32 t;
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     t = timer;

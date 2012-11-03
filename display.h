@@ -29,9 +29,7 @@ class Cdisplay {
     sKeypadResp *pRsp;
     bool performClear;
     DISPLAY::sLine Line[4];
-    bool writeClear(void);
     bool sendClear(void);
-    bool writeString(u08 StrLen, u08 xPos, u08 yPos, const char* Str);
     bool sendString(u08 StrLen, u08 xPos, u08 yPos, const char* Str);
     bool sendString_P(u08 xPos, u08 yPos, prog_char* Str);
     u08 sendStringHdl;
@@ -39,7 +37,10 @@ class Cdisplay {
     u08 nodeID;
     u08 cnt;
   public:
-    Cdisplay(Ctransport* _Transport,u08 _nodeID = DEFAULT_DISPLAY_NODE_ID);
+    Cdisplay(Ctransport* _Transport, u08 _nodeID = DEFAULT_DISPLAY_NODE_ID);
+    bool writeClear(void);
+    bool writeString(const char* Str, u08 xPos = 0, u08 yPos = 0, bool clear = true);
+    bool writeStringP(prog_char* _str, u08 xPos = 0, u08 yPos = 0, bool clear = true);
     bool available(void);
     void service(void);
     bool clear(void);

@@ -130,14 +130,22 @@ bool Cdisplay::sendClear(void) {
   return false;
 }
 
-bool Cdisplay::writeString(u08 StrLen, u08 xPos, u08 yPos, const char* Str) {
+bool Cdisplay::writeStringP(prog_char* _str, u08 _xPos, u08 _yPos, bool _clear) {
+  c08* str;
+  strcpy_P(str, _str);
+  return (writeString(str, _xPos, _yPos, _clear));
+}
+
+bool Cdisplay::writeString(const char* _str, u08 _xPos, u08 _yPos, bool _clear) {
   sKeypadResp rsp;
+  if (_clear)
+    writeClear();
   memset(&Cmd, 0, sizeof(sKeypadCmd));
   Cmd.Opcode = SET_LCD_STRING;
-  Cmd.Dat.DisplayText.StrLen = StrLen;
-  Cmd.Dat.DisplayText.xPos = xPos;
-  Cmd.Dat.DisplayText.yPos = yPos;
-  memcpy(Cmd.Dat.DisplayText.Str, Str, StrLen);
+  Cmd.Dat.DisplayText.StrLen = strlen(_str);
+  Cmd.Dat.DisplayText.xPos = _xPos;
+  Cmd.Dat.DisplayText.yPos = _yPos;
+  memcpy(Cmd.Dat.DisplayText.Str, _str, Cmd.Dat.DisplayText.StrLen);
   if (!Transport->read((u08*) &rsp, (u08*) &Cmd, sizeof(sKeypadCmd), nodeID)) {
     return false;
   }
@@ -146,7 +154,6 @@ bool Cdisplay::writeString(u08 StrLen, u08 xPos, u08 yPos, const char* Str) {
   }
   return true;
 }
-
 
 bool Cdisplay::sendString(u08 StrLen, u08 xPos, u08 yPos, const char* Str) {
   u08 cnt;

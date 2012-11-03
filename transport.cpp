@@ -22,7 +22,7 @@ Ctransport::Ctransport(Cnetwork* _network) :
 }
 
 bool Ctransport::read(u08* rxDat, u08* txDat, u08 byteCnt, u08 dstNode) {
-  start(300e-3);
+  start(maxWait);
   network->tx(txNum, dstNode, txDat, byteCnt);
   while (!network->packetAvailable()) {
     network->service();

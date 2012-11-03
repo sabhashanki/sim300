@@ -19,7 +19,7 @@ using namespace LCDKEYPAD;
 /****************************************************************************************/
 class Ckeypad: public Csignal {
     static const u08 DEFAULT_KEYPAD_NODE_ID = 0xFC;
-    static const f32 period = 5;
+    static const f32 period = 1;
     bool getKey(u08* key);
     Ctransport* Transport;
     sKeypadCmd Cmd;
