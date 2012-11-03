@@ -13,6 +13,7 @@
 #include <util/atomic.h>
 #include <util/delay.h>
 /****************************************************************************************/
+#include "cc1101.h"
 #include "common.h"
 #include "display.h"
 #include "i2c.h"
@@ -22,6 +23,7 @@
 #include "server.h"
 #include "sl018.h"
 #include "socket.h"
+#include "spi.h"
 #include "timer.h"
 #include "uart.h"
 /****************************************************************************************/

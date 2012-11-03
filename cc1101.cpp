@@ -21,6 +21,7 @@
 #define STATE_SETTL   5
 #define STATE_RXOVER  6
 #define STATE_TXUNDER 7
+
 /*
  Cpin pinSCK(0x23,5,ePinOut,true); //PORTB PIN 1
  Cpin pinMOSI(0x23,3,ePinOut,true);//PORTB PIN 2

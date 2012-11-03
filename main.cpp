@@ -1,13 +1,8 @@
 /****************************************************************************************/
 #include "main.h"
 /****************************************************************************************/
-static volatile u32 isr_time = 0;
-static volatile u32 time = 0;
-bool testSend = true;
-/****************************************************************************************/
-#define TICKER_PERIOD  139;
-/****************************************************************************************/
-void TimeTicker(void);
+static const u16 adrPortB = 0x23;
+static const u08 radioPktLen =  4;
 /****************************************************************************************/
 c08 msg[16];
 Cuart debugUart(0, 115200);
@@ -21,8 +16,17 @@ Ctransport transport(&network);
 Cdisplay display(&transport);
 Ckeypad keypad(&transport);
 Ci2c i2c;
-Cpin tagpin(0x23, 6, ePinIn, false, true);
+Cpin tagpin(adrPortB, 6, ePinIn, false, true);
+Cpin pinSS(adrPortB, 0, ePinOut, true);
+Cpin pinSCK(adrPortB, 1, ePinOut, true);
+Cpin pinMOSI(adrPortB, 2, ePinOut, true);
+Cpin pinMISO(adrPortB, 3, ePinIn, true);
+Cpin rfCS(adrPortB, 4, ePinOut, true);
+Cpin pinGDO0(adrPortB, 6, ePinIn, true);
+Cpin pinGDO2(adrPortB, 7, ePinIn, true);
 Csl018 tag(&i2c, &tagpin, 0xA0);
+Cspi spi(&pinMOSI, &pinSCK, &pinMISO, &pinSS, &rfCS, SPI_MODE_0, SPI_SPEED_FOSC_64);
+CC1101 rf(&spi, &pinGDO0, &pinGDO2, radioPktLen);
 /****************************************************************************************/
 void hello() {
   debugUart.sendStr_P(PSTR("\n\r  ===== Manhole Lock System ====="));
@@ -52,7 +56,9 @@ int main(void) {
 
   while (1) {
     if (tag.present()) {
-      tag.read();
+      if (tag.read()) {
+
+      }
     }
     //modem.service();
     //socket.service();

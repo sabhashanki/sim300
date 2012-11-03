@@ -105,15 +105,12 @@ class Csl018 {
     c08* getTagName() {
       return tagName(tagType);
     }
-    ;
     c08 getErrorCode() {
       return errorCode;
     }
-    ;
     u08 getTagType() {
       return tagType;
     }
-    ;
   private:
     void clearTime(void);
     u32 getTime(void);

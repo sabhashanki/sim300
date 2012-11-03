@@ -1,11 +1,8 @@
 #include <string.h>
 #include <util/delay.h>
 #include <util/atomic.h>
-
 #include "sl018.h"
-
 using namespace I2C;
-
 /*****************************************************************************************/
 Csl018::Csl018(Ci2c *_i2c, Cpin *_stpin, u08 _addr) {
   i2c = _i2c;
@@ -19,24 +16,27 @@ bool Csl018::reset(void) {
   sl018.uSL018.wr.len = 1;
   i2c->masterSend(address, sl018.uSL018.wr.len, sl018.uSL018.data);
   clearTime();
-  while (getTime() < 200000);
+  while (getTime() < 200000) {
+  };
   return true;
 }
 
 /*****************************************************************************************/
-bool Csl018::read(void){
+bool Csl018::read(void) {
   u08 size;
   sl018.uSL018.wr.cmd = CMD_SELECT;
   sl018.uSL018.wr.len = 2;
   i2c->masterSend(address, sl018.uSL018.wr.len, sl018.uSL018.data);
   clearTime();
-  while (getTime() < 5000);//5ms
+  while (getTime() < 5000)
+    ; //5ms
   sl018.uSL018.rd.len = 11;
-  i2c->masterReceive(address, sl018.uSL018.rd.len , sl018.uSL018.data);
+  i2c->masterReceive(address, sl018.uSL018.rd.len, sl018.uSL018.data);
   errorCode = sl018.uSL018.rd.sts;
-  if(errorCode==TAG_OK && sl018.uSL018.rd.cmd == CMD_SELECT && sl018.uSL018.rd.len > 0 && sl018.uSL018.rd.len < 16){
+  if (errorCode == TAG_OK && sl018.uSL018.rd.cmd == CMD_SELECT && sl018.uSL018.rd.len > 0
+      && sl018.uSL018.rd.len < 16) {
     size = (sl018.uSL018.rd.len - 3); //Subtract the len cmd and status bytes
-    memcpy(uid,&sl018.uSL018.rd.data,size);
+    memcpy(uid, &sl018.uSL018.rd.data, size);
     uidlen = size;
     tagType = sl018.uSL018.rd.data[size];
     return true;
@@ -89,10 +89,12 @@ bool Csl018::login(u08 sector) {
   i2c->masterSend(address, sl018.uSL018.wr.len, sl018.uSL018.data);
   clearTime();
   sl018.uSL018.rd.len = 3;
-  while (getTime() < 10000);//10ms
+  while (getTime() < 10000)
+    ; //10ms
   i2c->masterReceive(address, sl018.uSL018.rd.len, sl018.uSL018.rd.data);
   errorCode = sl018.uSL018.rd.sts;
-  if(errorCode==LOGIN_OK && sl018.uSL018.rd.cmd == CMD_LOGIN && (sl018.uSL018.rd.len > 0)){
+  if (errorCode == LOGIN_OK && sl018.uSL018.rd.cmd == CMD_LOGIN
+      && (sl018.uSL018.rd.len > 0)) {
     return true;
   }
   return false;
@@ -100,7 +102,7 @@ bool Csl018::login(u08 sector) {
 
 /*****************************************************************************************/
 /** Log in with specified key A or key B.
-  *	@param sector Sector number
+ *	@param sector Sector number
  *	@param keyType Which key to use: 0xAA for key A or 0xBB for key B
  *	@param key Key value (6 bytes)
  */
@@ -113,19 +115,21 @@ bool Csl018::login(u08 sector, u08 keyType, u08 key[6]) {
   memcpy(&sl018.uSL018.wr.data[3], key, 6);
   i2c->masterSend(address, sl018.uSL018.wr.len, sl018.uSL018.data);
   clearTime();
-  while (getTime() < 10000);//10ms
+  while (getTime() < 10000)
+    ; //10ms
   sl018.uSL018.rd.len = 3;
   i2c->masterReceive(address, sl018.uSL018.rd.len, sl018.uSL018.rd.data);
   errorCode = sl018.uSL018.rd.sts;
-  if(errorCode==LOGIN_OK && sl018.uSL018.rd.cmd == CMD_LOGIN && (sl018.uSL018.rd.len > 0)){
+  if (errorCode == LOGIN_OK && sl018.uSL018.rd.cmd == CMD_LOGIN
+      && (sl018.uSL018.rd.len > 0)) {
     return true;
   }
   return false;
 }
 #if 0
 /*****************************************************************************************
-	Read a data block of 16 bytes
-*****************************************************************************************/
+ Read a data block of 16 bytes
+ *****************************************************************************************/
 bool Csl018::readBlock(u08 block,u08 *_data) {
   data[0] = CMD_READ16;
   i2c->masterSend(address, 0x02, data);
@@ -133,15 +137,15 @@ bool Csl018::readBlock(u08 block,u08 *_data) {
   while (getTime() < 100000);
   i2c->masterReceive(address, 19, data);
   errorCode = data[2];
-  if(errorCode==TAG_OK && data[1] == CMD_READ16 && data[0] > 16){
+  if(errorCode==TAG_OK && data[1] == CMD_READ16 && data[0] > 16) {
     memcpy(_data,&data[3],16);
     return true;
   }
   return false;
 }
 /*****************************************************************************************
-  Read a page of 8 bytes
-*****************************************************************************************/
+ Read a page of 8 bytes
+ *****************************************************************************************/
 bool Csl018::readPage(u08 page, u08 *_data) {
   data[0] = CMD_READ4;
   data[1] = page;
@@ -150,7 +154,7 @@ bool Csl018::readPage(u08 page, u08 *_data) {
   while (getTime() < 100000);
   i2c->masterReceive(address, 11, data);
   errorCode = data[2];
-  if(errorCode==TAG_OK && data[1] == CMD_READ4 && data[0] > 8){
+  if(errorCode==TAG_OK && data[1] == CMD_READ4 && data[0] > 8) {
     memcpy(_data,&data[3],8);
     return true;
   }
@@ -178,7 +182,7 @@ void Csl018::writeBlock(u08 block, const c08* message) {
   len = data[0];
   cmd = data[1];
   errorCode = data[2];
-  if(errorCode==TAG_OK && len > 0){
+  if(errorCode==TAG_OK && len > 0) {
     memcpy(_data,&data[3],8);
     return true;
   }
@@ -231,7 +235,7 @@ void Csl018::led(bool on) {
  * Maps tag types to names.
  *	@param	type numeric tag type
  *	@return	Human-readable tag name as null-terminated string
-****************************************************************************************/
+ ****************************************************************************************/
 c08* Csl018::tagName(u08 type) {
   switch (type) {
     case 1:
@@ -253,7 +257,8 @@ c08* Csl018::tagName(u08 type) {
 
 /****************************************************************************************/
 void Csl018::clearTime(void) {
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  {
     timer = 0;
   }
 }
@@ -261,7 +266,8 @@ void Csl018::clearTime(void) {
 /****************************************************************************************/
 u32 Csl018::getTime(void) {
   u32 t;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  {
     t = timer;
   }
   return t;
