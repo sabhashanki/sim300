@@ -41,14 +41,15 @@ private:
   u32 time;
   volatile u08 busy;
 public:
-  volatile u32 isr_time;
-  sHeader rxHeader;
-  u08 transactNum[MAX_TRANSACTIONS];
-  u08 packetAvailable;
   Ctransport(Cnetwork* _network);
   void service(void);
   u08 tx(u08 _handle, u08 nodeId, u08* pDat, u08 numBytes,u08** ppRsp);
   bool rx(void);
+
+  volatile u32 isr_time;
+  sHeader rxHeader;
+  u08 transactNum[MAX_TRANSACTIONS];
+  u08 packetAvailable;
 };
 
 #endif /* CTRANSPORT_H_ */

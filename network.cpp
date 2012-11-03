@@ -12,8 +12,8 @@
 /****************************************************************************************/
 using namespace CNETWORK;
 /****************************************************************************************/
-Cnetwork::Cnetwork(Cuart* _uart, u08 _size = 128, u08 _node =0) {
-  this->uart = _uart;
+Cnetwork::Cnetwork(Cuart* _uartNr, u08 _node, u08 _size) {
+  this->uart = _uartNr;
   this->NodeId = _node;
   State = STATE_RX_HEADER;
   time = 0;

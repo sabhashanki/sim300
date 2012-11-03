@@ -1,24 +1,5 @@
 /****************************************************************************************/
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <avr/pgmspace.h>
-#include <avr/wdt.h>
-#include <avr/eeprom.h>
-#include <util/atomic.h>
-#include <util/delay.h>
-/****************************************************************************************/
-#include "server.h"
 #include "main.h"
-#include "modem.h"
-#include "common.h"
-#include "iopins.h"
-#include "timer.h"
-#include "uart.h"
-#include "i2c.h"
-#include "socket.h"
 /****************************************************************************************/
 static volatile u32 isr_time = 0;
 static volatile u32 time = 0;
@@ -34,6 +15,10 @@ Cuart modemUart(2, 115200);
 Cmodem modem(&modemUart);
 Csocket socket(&modem);
 Cserver server(&socket);
+Cuart keypadUart(1);
+Cnetwork network(&keypadUart, 1);
+Ctransport transport(&network);
+Cdisplay display(&transport);
 //Ci2c i2c;
 //Crtc rtc(&i2c, 0xD0);
 //CServer Server(&Modem);

@@ -49,7 +49,7 @@ namespace CNETWORK {
       volatile u32 time;
       sHeader Header;
       u08* payload;
-      Cnetwork(Cuart* UART, u08 size, u08 node);
+      Cnetwork(Cuart* _uartNr, u08 _node, u08 _size = 128);
       u08 setPayloadBufSize(u08 size);
       void service(void);
       u08 packetAvailable(void);

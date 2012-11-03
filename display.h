@@ -22,6 +22,7 @@ namespace DISPLAY {
   } sLine;
 }
 class Cdisplay {
+    static const u08 DEFAULT_DISPLAY_NODE_ID = 0xFC;
     DISPLAY::eState State;
     Ctransport* Transport;
     sKeypadCmd Cmd;
@@ -36,7 +37,7 @@ class Cdisplay {
     u08 nodeID;
     u08 cnt;
   public:
-    Cdisplay(Ctransport* _Transport,u08 _nodeID);
+    Cdisplay(Ctransport* _Transport,u08 _nodeID = DEFAULT_DISPLAY_NODE_ID);
     bool available(void);
     void service(void);
     bool clear(void);
