@@ -6,9 +6,8 @@
 #include "common.h"
 #include "uart.h"
 #include "fifo.h"
+#include "scheduler.h"
 
-//namespace CMODEM
-//{
 #define MDM_TIMEOUT_VAL  1000000 //1sec
 #define SERVICE_INTERVAL  200000//
 #define MDM_RETRIES_VAL 3
@@ -98,8 +97,9 @@ typedef struct {
     c08 message[140];
 } sSMS;
 //*****************************************************************************
-class Cmodem {
+class Cmodem : public Csignal {
   private:
+    static const f32 period = 100e-3;
     eMdmState mdmState;
     eCmdState cmdState;
     eMdmState failState;

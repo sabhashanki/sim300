@@ -17,6 +17,7 @@
 #include "display.h"
 #include "i2c.h"
 #include "iopins.h"
+#include "keypad.h"
 #include "modem.h"
 #include "server.h"
 #include "socket.h"

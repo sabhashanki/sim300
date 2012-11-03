@@ -4,12 +4,10 @@
 #include <util/delay.h>
 #include "transport.h"
 
-#define TX_PERIOD 750000  //us
-#define MAX_RE_TX 10
-
-Ctransport::Ctransport(Cnetwork* _network) {
+Ctransport::Ctransport(Cnetwork* _network) :
+    Csignal(period) {
   u08 cnt;
-  for (cnt = 0; cnt < MAX_TRANSACTIONS; cnt++) {
+  for (cnt = 0; cnt < maxTransactions; cnt++) {
     txList[cnt].used = false;
     txList[cnt].done = false;
     txList[cnt].cntTx = 0;
@@ -17,42 +15,48 @@ Ctransport::Ctransport(Cnetwork* _network) {
   txIndex = 0;
   packetAvailable = false;
   network = _network;
-  isr_time = 0;
   time = 0;
   busy = false;
+  scheduler.attach(this);
+  txNum = 0;
+}
+
+bool Ctransport::read(u08* rxDat, u08* txDat, u08 byteCnt, u08 dstNode) {
+  start(300e-3);
+  network->tx(txNum, dstNode, txDat, byteCnt);
+  while (!network->packetAvailable()) {
+    network->service();
+    if (isSet()) {
+      return false;
+    }
+  }
+  memcpy(rxDat, network->payload, network->Header.Size);
+  network->reset();
+  return true;
 }
 
 void Ctransport::service(void) {
-  u08 cnt;
-  if(rx()){
-    return;
-  }
+  u08 cnt = 0;
 
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-    time = isr_time;
-  }
-  if (time > TX_PERIOD || !busy) {
-    time = 0;
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-      isr_time = time;
-    }
-    cnt = 0;
-    while (cnt < MAX_TRANSACTIONS) {
-      if (txList[txIndex].used == true && txList[txIndex].done == false) {
-        if (txList[txIndex].cntTx > MAX_RE_TX) {
+  rx();
+  if (isSet()) {
+    while (cnt < maxTransactions) {
+      if (txList[txIndex].used && !txList[txIndex].done) {
+        if (txList[txIndex].cntTx > maxReTx) {
           txList[txIndex].used = false;
           txList[txIndex].done = false;
           txList[txIndex].timeout = true;
           txList[txIndex].cntTx = 0;
         } else {
-          network->tx(txIndex, txList[txIndex].nodeId, txList[txIndex].txDat, txList[txIndex].len);
+          network->tx(txIndex, txList[txIndex].nodeId, txList[txIndex].txDat,
+                      txList[txIndex].len);
           txList[txIndex].cntTx++;
-          txIndex = (txIndex + 1) % MAX_TRANSACTIONS;
+          txIndex = (txIndex + 1) % maxTransactions;
           busy = true;
+          return;
         }
-        break;
       }
-      txIndex = (txIndex + 1) % MAX_TRANSACTIONS;
+      txIndex = (txIndex + 1) % maxTransactions;
       cnt++;
     }
   }
@@ -63,7 +67,7 @@ bool Ctransport::rx(void) {
 
   if (network->packetAvailable()) {
     index = network->Header.TransactNum;
-    if (index < MAX_TRANSACTIONS) {
+    if (index < maxTransactions) {
       memcpy(txList[index].rxDat, network->payload, network->Header.Size);
       txList[index].done = true;
       txList[index].cntTx = 0;
@@ -82,9 +86,9 @@ u08 Ctransport::tx(u08 _handle, u08 nodeId, u08* pDat, u08 numBytes, u08** ppRsp
   switch (_handle) {
     //========================================================================
     //  Create a new transaction - get first available handle/index
-    case HANDLE_EMPTY:
+    case handleEmpty:
       i = getEmptyIndex();
-      if (i < MAX_TRANSACTIONS) {
+      if (i < maxTransactions) {
         txList[i].used = true;
         txList[i].nodeId = nodeId;
         memcpy(txList[i].txDat, pDat, numBytes);
@@ -95,32 +99,32 @@ u08 Ctransport::tx(u08 _handle, u08 nodeId, u08* pDat, u08 numBytes, u08** ppRsp
         txList[i].cntTx = 0;
         txList[i].timeout = false;
       } else {
-        i = HANDLE_EMPTY;
+        i = handleEmpty;
       }
       ret = i;
       break;
       //========================================================================
       //  Reset the handle
-    case HANDLE_DONE:
-      ret = HANDLE_EMPTY;
+    case handleDone:
+      ret = handleEmpty;
       break;
       //========================================================================
       //  Respond with existing transaction in Queue
     default:
-      if (_handle < MAX_TRANSACTIONS) {
+      if (_handle < maxTransactions) {
         if (txList[_handle].timeout) {
           txList[_handle].timeout = false;
           txList[_handle].used = false;
-          ret = HANDLE_EMPTY;
+          ret = handleEmpty;
         } else if (txList[_handle].done) {
           txList[_handle].used = false;
           *ppRsp = (u08*) &txList[_handle].rxDat[0];
-          ret = HANDLE_DONE;
+          ret = handleDone;
         } else {
           ret = _handle;
         }
       } else {
-        ret = HANDLE_EMPTY;
+        ret = handleEmpty;
       }
       break;
   }
@@ -130,11 +134,11 @@ u08 Ctransport::tx(u08 _handle, u08 nodeId, u08* pDat, u08 numBytes, u08** ppRsp
 //========================================================================
 u08 Ctransport::getEmptyIndex(void) {
   u08 cnt;
-  for (cnt = 0; cnt < MAX_TRANSACTIONS; cnt++) {
+  for (cnt = 0; cnt < maxTransactions; cnt++) {
     if (!txList[cnt].used) {
       return cnt;
     }
   }
-  return HANDLE_EMPTY;
+  return handleEmpty;
 }
 

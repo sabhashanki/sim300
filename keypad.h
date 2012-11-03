@@ -18,6 +18,7 @@ using namespace LCDKEYPAD;
 #define KEYBUF_SIZE           32
 /****************************************************************************************/
 class Ckeypad: public Csignal {
+    static const u08 DEFAULT_KEYPAD_NODE_ID = 0xFC;
     static const f32 period = 5;
     bool getKey(u08* key);
     Ctransport* Transport;
@@ -40,7 +41,8 @@ class Ckeypad: public Csignal {
     u08 nodeID;
     u16 preval;
   public:
-    Ckeypad(Ctransport* _transport, u08 _nodeID);
+    Ckeypad(Ctransport* _transport, u08 _nodeID = DEFAULT_KEYPAD_NODE_ID);
+    bool readKey(u08* key);
     void service(void);
     bool getDigit(u08* digit);
     bool getDigits(u32* digits, u08 len);

@@ -15,23 +15,6 @@
 
 #define DYNDNS_IP   "204.13.248.74"
 
-//#define SMS_DEBUG
-
-/*
- AT = OK, just to make the modem respond
- ATE1 = OK , enable the ECHO
- AT+CGATT=1 e= OK, enable GPRS
- AT+CGDCONT=1,"IP","here_apn_provider" = OK, change for your APN
- AT+CSTT="here_apn_provider","user","pass" = Ok
- AT+CDNSORIP=0 = OK = to accept IP address(No domain name)
- AT+CIICR = OK, connect to the gprs using the apn
- AT+CIFSR = to check the IP address the provider give you
- AT+CLPORT="TCP","1720" = IF you using TCP, for UDP skip this one
- AT+CIPSTART="TCP","192.168.1.1","1720" = use your IP address and port it will respond CONNECT OK
-
- AT+CIPSTART="UDP","192.168.1.1","1720" = this is for UDP,
- */
-
 const char AT_CALL_READY[] = "Call Ready";
 const char AT_OK[] = "\r\nOK\r\n";
 const char AT_IP[] = ".";
@@ -47,7 +30,8 @@ const char AT_IP_CLOSE[] = "CLOSE OK";
 
 extern Cuart debugUart;
 /*******************************************************************************/
-Cmodem::Cmodem(Cuart * _pUart) {
+Cmodem::Cmodem(Cuart * _pUart) :
+    Csignal(period) {
   usedns = false;
   pUart = _pUart;
   retry = MDM_RETRIES_VAL;
@@ -72,6 +56,7 @@ Cmodem::Cmodem(Cuart * _pUart) {
   gprsrx = false;
   ss = SOCK_CLOSED;
   rxFifo.setBufSize(255);
+  scheduler.attach(this);
 }
 /*******************************************************************************/
 bool Cmodem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
@@ -376,20 +361,22 @@ void Cmodem::service(void) {
   c08 strLen[4];
   u08 buf[MDM_MAX_RX_CMD_LEN];
 
-  memset(gprsraw, 0, MDM_MAX_RX_CMD_LEN);
-  lenF = pUart->rxFIFO.read(gprsraw, 0, true);
-  if (lenF) {
-    pstr = strstr_P((c08*) gprsraw, PSTR("+IPD"));
-    if (pstr != 0) {
-      start = strchr((c08*) pstr, 'D');
-      end = strchr((c08*) pstr, ':');
-      if (start && end) {
-        strncpy(strLen, start + 1, end - start - 1);
-        len = atoi(strLen);
-        if ((lenF - (end - (c08*) gprsraw + 1)) >= len) {
-          memcpy(buf, end + 1, len);
-          rxFifo.write(buf, len);
-          pUart->clearRx();
+  if (isSet()) {
+    memset(gprsraw, 0, MDM_MAX_RX_CMD_LEN);
+    lenF = pUart->rxFIFO.read(gprsraw, 0, true);
+    if (lenF) {
+      pstr = strstr_P((c08*) gprsraw, PSTR("+IPD"));
+      if (pstr != 0) {
+        start = strchr((c08*) pstr, 'D');
+        end = strchr((c08*) pstr, ':');
+        if (start && end) {
+          strncpy(strLen, start + 1, end - start - 1);
+          len = atoi(strLen);
+          if ((lenF - (end - (c08*) gprsraw + 1)) >= len) {
+            memcpy(buf, end + 1, len);
+            rxFifo.write(buf, len);
+            pUart->clearRx();
+          }
         }
       }
     }

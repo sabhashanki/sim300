@@ -29,7 +29,9 @@ class Cdisplay {
     sKeypadResp *pRsp;
     bool performClear;
     DISPLAY::sLine Line[4];
+    bool writeClear(void);
     bool sendClear(void);
+    bool writeString(u08 StrLen, u08 xPos, u08 yPos, const char* Str);
     bool sendString(u08 StrLen, u08 xPos, u08 yPos, const char* Str);
     bool sendString_P(u08 xPos, u08 yPos, prog_char* Str);
     u08 sendStringHdl;

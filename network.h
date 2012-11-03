@@ -1,9 +1,10 @@
 #ifndef CNETWORK_H_
 #define CNETWORK_H_
 /****************************************************************************************/
+#include "scheduler.h"
 #include "types.h"
 #include "uart.h"
-
+/****************************************************************************************/
 namespace CNETWORK {
   /****************************************************************************************/
 #define NUM_PAYLOAD_BYTES   128
@@ -33,10 +34,13 @@ namespace CNETWORK {
     STATE_PACKET_AVAILABLE
   } eState;
   /****************************************************************************************/
-  class Cnetwork {
+  class Cnetwork : public Csignal{
     private:
       static const u08 BROADCAST_NODE_ID = 0;
       static const u08 UNCONF_NODE_ID = 0;
+      static const f32 timeoutTime = 1;
+      static const f32 period = 10e-3;
+      Csignal timeout;
       Cuart* uart;
       u08 cntByte;
       u32 timeLimit;

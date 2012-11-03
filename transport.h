@@ -12,44 +12,47 @@
 #include "types.h"
 #include "network.h"
 
-#define HANDLE_EMPTY  0xFE
-#define HANDLE_DONE   0xFD
-
-#define MAX_TRANSACTIONS 16
+typedef enum {
+  handleEmpty = 0xFE, handleDone = 0xFD
+} eHandle;
 
 using namespace CNETWORK;
 
 typedef struct {
-  u08 used;
-  u08 done;
-  u08 timeout;
-  u08 nodeId;
-  u08 rxDat[NUM_PAYLOAD_BYTES];/* GROOT HACK*/
-  u08 txDat[NUM_PAYLOAD_BYTES];/* GROOT HACK*/
-  u08 len;
-  u08 *rsp;
-  u16 cntTx;
+    u08 used;
+    u08 done;
+    u08 timeout;
+    u08 nodeId;
+    u08 rxDat[NUM_PAYLOAD_BYTES];/* GROOT HACK*/
+    u08 txDat[NUM_PAYLOAD_BYTES];/* GROOT HACK*/
+    u08 len;
+    u08 *rsp;
+    u16 cntTx;
 } sTxList;
 
+class Ctransport: public Csignal {
+  private:
+    static const f32 period = 750e-3;
+    static const u08 maxReTx = 10;
+    static const u08 maxTransactions = 16;
+    static const u08 maxWait = 200;
+    Cnetwork* network;
+    sTxList txList[maxTransactions];
+    u08 txIndex;
+    u08 getEmptyIndex(void);
+    u32 time;
+    volatile u08 busy;
+  public:
+    Ctransport(Cnetwork* _network);
+    bool read(u08* rxDat, u08* txDat, u08 byteCnt, u08 dstNode);
+    void service(void);
+    u08 tx(u08 _handle, u08 nodeId, u08* pDat, u08 numBytes, u08** ppRsp);
+    bool rx(void);
 
-class Ctransport {
-private:
-  Cnetwork* network;
-  sTxList txList[MAX_TRANSACTIONS];
-  u08 txIndex;
-  u08 getEmptyIndex(void);
-  u32 time;
-  volatile u08 busy;
-public:
-  Ctransport(Cnetwork* _network);
-  void service(void);
-  u08 tx(u08 _handle, u08 nodeId, u08* pDat, u08 numBytes,u08** ppRsp);
-  bool rx(void);
-
-  volatile u32 isr_time;
-  sHeader rxHeader;
-  u08 transactNum[MAX_TRANSACTIONS];
-  u08 packetAvailable;
+    sHeader rxHeader;
+    u08 transactNum[maxTransactions];
+    u08 txNum;
+    u08 packetAvailable;
 };
 
 #endif /* CTRANSPORT_H_ */

@@ -22,8 +22,8 @@ Cdisplay::Cdisplay(Ctransport* _Transport, u08 _nodeID) {
     Line[cnt].size = 0;
     Line[cnt].xPos = 0;
   }
-  sendStringHdl = HANDLE_EMPTY;
-  sendClearHdl = HANDLE_EMPTY;
+  sendStringHdl = handleEmpty;
+  sendClearHdl = handleEmpty;
   nodeID = _nodeID;
   cnt = 0;
 }
@@ -101,13 +101,26 @@ bool Cdisplay::setString_P(u08 xPos, u08 yPos, prog_char *buf) {
   return false;
 }
 
+bool Cdisplay::writeClear(void) {
+  sKeypadResp rsp;
+  memset(&Cmd, 0, sizeof(sKeypadCmd));
+  Cmd.Opcode = CLEAR_LCD;
+  if (!Transport->read((u08*) &rsp, (u08*) &Cmd, sizeof(sKeypadCmd), nodeID)) {
+    return false;
+  }
+  if (rsp.Hdr.Opcode != Cmd.Opcode || !rsp.Hdr.Result) {
+    return false;
+  }
+  return true;
+}
+
 bool Cdisplay::sendClear(void) {
   memset(&Cmd, 0, sizeof(sKeypadCmd));
   Cmd.Opcode = CLEAR_LCD;
   sendClearHdl = Transport->tx(sendClearHdl, nodeID, (u08*) &Cmd, sizeof(sKeypadCmd),
                                (u08**) &pRsp);
-  if (sendClearHdl == HANDLE_DONE) {
-    sendClearHdl = HANDLE_EMPTY;
+  if (sendClearHdl == handleDone) {
+    sendClearHdl = handleEmpty;
     if (pRsp->Hdr.Opcode == CLEAR_LCD) {
       if (pRsp->Hdr.Result == true) {
         return true;
@@ -116,6 +129,24 @@ bool Cdisplay::sendClear(void) {
   }
   return false;
 }
+
+bool Cdisplay::writeString(u08 StrLen, u08 xPos, u08 yPos, const char* Str) {
+  sKeypadResp rsp;
+  memset(&Cmd, 0, sizeof(sKeypadCmd));
+  Cmd.Opcode = SET_LCD_STRING;
+  Cmd.Dat.DisplayText.StrLen = StrLen;
+  Cmd.Dat.DisplayText.xPos = xPos;
+  Cmd.Dat.DisplayText.yPos = yPos;
+  memcpy(Cmd.Dat.DisplayText.Str, Str, StrLen);
+  if (!Transport->read((u08*) &rsp, (u08*) &Cmd, sizeof(sKeypadCmd), nodeID)) {
+    return false;
+  }
+  if (rsp.Hdr.Opcode != Cmd.Opcode || !rsp.Hdr.Result) {
+    return false;
+  }
+  return true;
+}
+
 
 bool Cdisplay::sendString(u08 StrLen, u08 xPos, u08 yPos, const char* Str) {
   u08 cnt;
@@ -130,8 +161,8 @@ bool Cdisplay::sendString(u08 StrLen, u08 xPos, u08 yPos, const char* Str) {
   }
   sendStringHdl = Transport->tx(sendStringHdl, nodeID, (u08*) &Cmd, sizeof(sKeypadCmd),
                                 (u08**) &pRsp);
-  if (sendStringHdl == HANDLE_DONE) {
-    sendStringHdl = HANDLE_EMPTY;
+  if (sendStringHdl == handleDone) {
+    sendStringHdl = handleEmpty;
     if (pRsp->Hdr.Opcode == SET_LCD_STRING) {
       if (pRsp->Hdr.Result == true) {
         return true;
@@ -150,8 +181,8 @@ bool Cdisplay::sendString_P(u08 xPos, u08 yPos, prog_char* Str) {
   strcpy_P((c08*) Cmd.Dat.DisplayText.Str, Str);
   sendStringHdl = Transport->tx(sendStringHdl, nodeID, (u08*) &Cmd, sizeof(sKeypadCmd),
                                 (u08**) &pRsp);
-  if (sendStringHdl == HANDLE_DONE) {
-    sendStringHdl = HANDLE_EMPTY;
+  if (sendStringHdl == handleDone) {
+    sendStringHdl = handleEmpty;
     if (pRsp->Hdr.Opcode == SET_LCD_STRING) {
       if (pRsp->Hdr.Result == true) {
         return true;

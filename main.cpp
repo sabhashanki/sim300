@@ -19,6 +19,7 @@ Cuart keypadUart(1);
 Cnetwork network(&keypadUart, 1);
 Ctransport transport(&network);
 Cdisplay display(&transport);
+Ckeypad keypad(&transport);
 //Ci2c i2c;
 //Crtc rtc(&i2c, 0xD0);
 //CServer Server(&Modem);
@@ -36,28 +37,22 @@ int main(void) {
   sei();
   debugUart.sendStr_P(PSTR("\x1B[2J")); //Clear Screen
   debugUart.sendStr_P(PSTR("\x1B[0;0H")); //Position Cursor
-  //while(1){
-  debugUart.sendStr_P(PSTR("\n\r  ===== CULLINAN RFID MANAGER V1.5 DEMO ===== \n\r"));
+  debugUart.sendStr_P(PSTR("\n\r  ===== Manhole Lock System ===== \n\r"));
 //  DbgUart.sendStr(rtc.getTimestamp());
   //}
   //Controller.Setup();
-  modem.ServerSetIP((c08*) "41.181.16.116", (c08*) "61000", false);
-  if (!modem.initModem())
-    goto error;
-  if (!modem.initIP(false))
-    goto error;
+//  modem.ServerSetIP((c08*) "41.181.16.116", (c08*) "61000", false);
+//  if (!modem.initModem())
+//    goto error;
+//  if (!modem.initIP(false))
+//    goto error;
 
   while (1) {
-    _delay_ms(10);
     modem.service();
     socket.service();
-    network.service();
-    transport.service();
-    if (testSend) {
-      server.sendTestPkt();
-      testSend = false;
-    }
+    keypad.service();
   }
+
   error: while (1) {
     testSend = !testSend;
   }

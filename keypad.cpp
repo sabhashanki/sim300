@@ -9,11 +9,12 @@
 #include <util/atomic.h>
 #include "keypad.h"
 
-Ckeypad::Ckeypad(Ctransport* _transport, u08 _nodeID) : Csignal(period){
+Ckeypad::Ckeypad(Ctransport* _transport, u08 _nodeID) :
+    Csignal(period) {
   Transport = _transport;
-  getKeyHdl = HANDLE_EMPTY;
-  getDigitsHdl = HANDLE_EMPTY;
-  clearHdl = HANDLE_EMPTY;
+  getKeyHdl = handleEmpty;
+  getDigitsHdl = handleEmpty;
+  clearHdl = handleEmpty;
   head = 0;
   tail = 0;
   size = 0;
@@ -29,7 +30,7 @@ Ckeypad::Ckeypad(Ctransport* _transport, u08 _nodeID) : Csignal(period){
 
 void Ckeypad::service() {
   if (isSet()) {
-    if (getKey(&key)) {
+    if (readKey(&key)) {
       switch (key) {
         case ENTER_KEY:
           enterPressed = true;
@@ -61,12 +62,25 @@ void Ckeypad::service() {
   }
 }
 
+bool Ckeypad::readKey(u08* key) {
+  sKeypadResp rsp;
+  Cmd.Opcode = GET_KEYPAD_KEY;
+  if (!Transport->read((u08*)&rsp, (u08*) &Cmd, sizeof(sKeypadCmd), nodeID)) {
+    return false;
+  }
+  if (rsp.Hdr.Opcode != GET_KEYPAD_KEY || !rsp.Hdr.Result) {
+    return false;
+  }
+  *key = rsp.Dat.Key;
+  return true;
+}
+
 bool Ckeypad::getKey(u08* key) {
   Cmd.Opcode = GET_KEYPAD_KEY;
   getKeyHdl = Transport->tx(getKeyHdl, nodeID, (u08*) &Cmd, sizeof(sKeypadCmd),
                             (u08**) &pRsp);
-  if (getKeyHdl == HANDLE_DONE) {
-    getKeyHdl = HANDLE_EMPTY;
+  if (getKeyHdl == handleDone) {
+    getKeyHdl = handleEmpty;
     if (pRsp->Hdr.Opcode == GET_KEYPAD_KEY) {
       if (pRsp->Hdr.Result == true) {
         *key = pRsp->Dat.Key;
