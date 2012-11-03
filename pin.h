@@ -27,18 +27,22 @@ typedef enum {
 } ePinDir;
 //****************************************************************************************
 class Cpin {
-    bool activeLow;
+    bool isActiveLow;
     u08 pin;
     u16 pinAdr;
   public:
-    Cpin(u16 portBaseAdr, u08 pinNumber, ePinDir dir, bool pullup = false, bool activeLow = false);
-    bool isSet(void);
-    bool isClr(void);
-    void set(void);
-    void clr(void);
-    void setlogic(bool _activeLow);
+    Cpin(u16 portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup = false, bool _isActiveLow = false);
+    bool isEnabled(void);
+    bool isDisabled(void);
+    void enable(void);
+    void disable(void);
+    bool isHigh(void);
+    bool isLow(void);
+    void setHigh(void);
+    void setLow(void);
+    void setPolarity(bool _isActiveLow);
     void toggle(void);
-    void setDir(ePinDir dir);
+    void setDir(ePinDir _dir);
     void pullup(bool _pullup);
 };
 //****************************************************************************************

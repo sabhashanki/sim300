@@ -1,22 +1,9 @@
 /****************************************************************************************/
 #include <stdlib.h>
 #include <string.h>
-#ifndef WIN32
 #include <avr/sleep.h>
 #include <avr/eeprom.h>
 #include <util/atomic.h>
-#include "iopins.h"
-#else
-#include <Classes.hpp>
-#include <Controls.hpp>
-#include <StdCtrls.hpp>
-#include <Forms.hpp>
-#include <ComCtrls.hpp>
-#include <Menus.hpp>
-#include <ExtCtrls.hpp>
-#include "main.h"
-#define ATOMIC_BLOCK(val)
-#endif
 /****************************************************************************************/
 #include "uart.h"
 #include "crc.h"
@@ -25,54 +12,30 @@
 /****************************************************************************************/
 using namespace CNETWORK;
 /****************************************************************************************/
-#undef DEBUG
-/****************************************************************************************/
-#ifndef WIN32
-
-#define EE_NODEID			(u08 *)(0x01)
-
-#else
-AnsiString str;
-#endif
-/****************************************************************************************/
-CNetwork::CNetwork(Cuart* UART, u08 size) {
-  this->UART = UART;
-  this->NodeId = nodeidGet();
+Cnetwork::Cnetwork(Cuart* _uart, u08 _size = 128, u08 _node =0) {
+  this->uart = _uart;
+  this->NodeId = _node;
   State = STATE_RX_HEADER;
   time = 0;
   timeLimit = 0;
   payloadSize = 0;
   payload = 0;
   healthy = true;
-  baudRate = this->UART->baudRate;
-  setPayloadBufSize(size);
+  baudRate = this->uart->baudRate;
+  setPayloadBufSize(_size);
 }
 /****************************************************************************************/
-CNetwork::CNetwork(Cuart* UART, u08 size, u08 node) {
-  this->UART = UART;
-  nodeidSet(node);
-  this->NodeId = node;
-  State = STATE_RX_HEADER;
-  time = 0;
-  timeLimit = 0;
-  payloadSize = 0;
-  payload = 0;
-  healthy = true;
-  baudRate = this->UART->baudRate;
-  setPayloadBufSize(size);
-}
-/****************************************************************************************/
-u08 CNetwork::setPayloadBufSize(u08 size) {
-  payload = (u08*) malloc(size);
+u08 Cnetwork::setPayloadBufSize(u08 _size) {
+  payload = (u08*) malloc(_size);
   if (payload == NULL) {
     healthy = false;
     return false;
   }
-  payloadSize = size;
+  payloadSize = _size;
   return true;
 }
 /****************************************************************************************/
-void CNetwork::service(void)
+void Cnetwork::service(void)
 {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 	{
@@ -83,22 +46,22 @@ void CNetwork::service(void)
 	}
   switch (State) {
     case STATE_RX_HEADER:
-      if (UART->rxFIFO.read(&Header.Header, 1) == 1) {
+      if (uart->rxFIFO.read(&Header.Header, 1) == 1) {
         if (Header.Header == HEADER) {
           cntByte = 0;
           State = STATE_RX_SIZE;
           ATOMIC_BLOCK(ATOMIC_RESTORESTATE){ time = 0;}
-          timeLimit = 2 * (sizeof(sHeader) * 10 * 1000000) / (baudRate);
+          timeLimit = 3 * (sizeof(sHeader) * 10 * 1000000) / (baudRate);
         }
       }
       break;
     case STATE_RX_SIZE:
-      if (UART->rxFIFO.read(&Header.Size, 1) == 1) {
+      if (uart->rxFIFO.read(&Header.Size, 1) == 1) {
         State = STATE_RX_NOT_SIZE;
       }
       break;
     case STATE_RX_NOT_SIZE:
-      if (UART->rxFIFO.read(&Header.NotSize, 1) == 1) {
+      if (uart->rxFIFO.read(&Header.NotSize, 1) == 1) {
         if ((Header.Size ^ Header.NotSize) == 0xFF) {
           State = STATE_RX_DST_NODE;
         } else {
@@ -107,22 +70,22 @@ void CNetwork::service(void)
       }
       break;
     case STATE_RX_DST_NODE:
-      if (UART->rxFIFO.read(&Header.DstNode, 1) == 1) {
+      if (uart->rxFIFO.read(&Header.DstNode, 1) == 1) {
         State = STATE_RX_SRC_NODE;
       }
       break;
     case STATE_RX_SRC_NODE:
-      if (UART->rxFIFO.read(&Header.SrcNode, 1) == 1) {
+      if (uart->rxFIFO.read(&Header.SrcNode, 1) == 1) {
         State = STATE_RX_TRANSACT_NUM;
       }
       break;
     case STATE_RX_TRANSACT_NUM:
-      if (UART->rxFIFO.read(&Header.TransactNum, 1) == 1) {
+      if (uart->rxFIFO.read(&Header.TransactNum, 1) == 1) {
         State = STATE_RX_CRC;
       }
       break;
     case STATE_RX_CRC:
-      if (UART->rxFIFO.read(&Header.CRC, 1) == 1) {
+      if (uart->rxFIFO.read(&Header.CRC, 1) == 1) {
         cntByte = 0;
         ATOMIC_BLOCK(ATOMIC_RESTORESTATE){ time = 0;}
         timeLimit = 2 * (Header.Size * 10 * 1000000) / (baudRate);
@@ -134,7 +97,7 @@ void CNetwork::service(void)
       }
       break;
     case STATE_SKIP_PAYLOAD:
-      if (UART->rxFIFO.read(&payload[0], 1) == 1) {
+      if (uart->rxFIFO.read(&payload[0], 1) == 1) {
         cntByte++;
         if (cntByte == Header.Size) {
           State = STATE_RX_HEADER;
@@ -142,7 +105,7 @@ void CNetwork::service(void)
       }
       break;
     case STATE_RX_PAYLOAD:
-      if (UART->rxFIFO.read(&payload[cntByte], 1) == 1) {
+      if (uart->rxFIFO.read(&payload[cntByte], 1) == 1) {
         cntByte++;
         if (cntByte == Header.Size) {
           u08 calcCrc;
@@ -150,30 +113,6 @@ void CNetwork::service(void)
           if ((calcCrc == Header.CRC) && (Header.DstNode == NodeId
               || Header.DstNode == BROADCAST_NODE_ID)) {
             State = STATE_PACKET_AVAILABLE;
-#ifdef WIN32
-      str = "HDR:0x" + IntToHex(*((u08 *)&Header + 0),2);
-      str = str +  " Len:" + IntToStr(Header.Size);
-      str = str +  " Dst:0x" + IntToHex(Header.DstNode,2);
-      str = str +  " Src:0x" + IntToHex(Header.SrcNode,2);
-      str = str +  " Num:" + IntToStr(Header.TransactNum);
-      str = str +  " CRC:0x" + IntToHex(Header.CRC,2);
-      fmMain->RxCnt->Caption = IntToStr(fmMain->rxcnt++);
-      /*
-      for(int i=0;i<sizeof(Header);i++)
-      {
-        str = str + " " + IntToHex(*((u08 *)&Header + i),2);
-      }
-      */
-      fmMain->RxMemo->Lines->Add(str);
-      str = "DAT:";
-      for(int i=0;i<cntByte;i++)
-      {
-        str = str + " " + IntToHex(payload[i],2);
-      }
-      fmMain->RxMemo->Lines->Add(str);
-#endif
-
-            //timeLimit = 500000;
           } else {
             State = STATE_RX_HEADER;
           }
@@ -189,11 +128,11 @@ void CNetwork::service(void)
   }
 }
 /****************************************************************************************/
-void CNetwork::reset(void) {
+void Cnetwork::reset(void) {
   State = STATE_RX_HEADER;
 }
 /****************************************************************************************/
-u08 CNetwork::packetAvailable(void) {
+u08 Cnetwork::packetAvailable(void) {
   if(State == STATE_PACKET_AVAILABLE)
   {
     return true;
@@ -201,7 +140,7 @@ u08 CNetwork::packetAvailable(void) {
   return false;
 }
 /****************************************************************************************/
-void CNetwork::tx(u08 transactNum, u08 dstNode, u08* Dat, u08 byteCnt) {
+void Cnetwork::tx(u08 transactNum, u08 dstNode, u08* Dat, u08 byteCnt) {
 
   sHeader Header;
   Header.Header = HEADER;
@@ -211,74 +150,6 @@ void CNetwork::tx(u08 transactNum, u08 dstNode, u08* Dat, u08 byteCnt) {
   Header.SrcNode = NodeId;
   Header.TransactNum = transactNum;
   Header.CRC = crc8(Dat, byteCnt);
-  UART->write((c08*) &Header, sizeof(Header));
-  UART->write((c08*)Dat, byteCnt);
-
+  uart->write((c08*) &Header, sizeof(Header));
+  uart->write((c08*)Dat, byteCnt);
 }
-/****************************************************************************************/
-#define EE_MAX	32
-u08 CNetwork::nodeidGet(void) {
-#ifdef WIN32
-  return MASTER_NODE_ID;
-#else
-  	u08 block[EE_MAX];
-  	u08 i,j,big,id;
-  	u08 cnt[EE_MAX];
-
-  	memset(cnt,0,EE_MAX);
-
-  	cli();
-  	for(i=0;i<EE_MAX;i++)
-  	{
-  		block[i] = eeprom_read_byte(EE_NODEID+i);
-  	}
-
-  	for(i=0;i<EE_MAX;i++)
-  	{
-  		for(j=0;j<EE_MAX;j++)
-  		{
-  			if(block[j]==block[i])
-  				cnt[i]++;
-  		}
-  	}
-  	id=0;
-  	big = 0;
-  	for(i=0;i<EE_MAX;i++)
-  	{
-    	  if(cnt[i] > big)
-    	  {
-    		big = cnt[i];
-    		id = block[i];
-    	  }
-  	}
-
-  	for(i=0;i<EE_MAX;i++)
-  	{
-  	  /* reset the node ID assume less than five means a corrupt value */
-  	  if(cnt[i] < 5)
-  	  {
-  		eeprom_write_byte((EE_NODEID)+i,id);
-  	  }
-  	}
-  	sei();
-
-  	return id;
-#endif
-}
-/****************************************************************************************/
-void CNetwork::nodeidSet(u08 ID) {
-	u08 i;
-	if(ID < 100 || ID == UNCONF_NODE_ID){
-	  this->NodeId = ID;
-	}
-	else{
-	  return;
-	}
-	cli();
-	for(i=0;i<32;i++)
-	{
-		eeprom_write_byte((EE_NODEID)+i,ID);
-	}
-	sei();
-}
-/****************************************************************************************/

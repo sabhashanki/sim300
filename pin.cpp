@@ -15,27 +15,27 @@
 #define DDR_ADR     (this->pinAdr+1)
 #define PORT_ADR    (this->pinAdr+2)
 /****************************************************************************************/
-Cpin::Cpin(u16 portBaseAdr, u08 pinNumber, ePinDir dir, bool _pullup, bool _activeLow) {
-  this->pinAdr = portBaseAdr;
-  this->pin = pinNumber;
-  this->activeLow = _activeLow;
-  if (dir == ePinIn) {
+Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup, bool _activeLow) {
+  this->pinAdr = _portBaseAdr;
+  this->pin = _pinNumber;
+  this->isActiveLow = _activeLow;
+  if (_dir == ePinIn) {
     // Set the pin as an input by clearing the bit in the direction register.
-    (*(volatile u08*) (DDR_ADR)) &= ~(1 << pinNumber);
+    (*(volatile u08*) (DDR_ADR)) &= ~(1 << _pinNumber);
   } else {
     // Set the pin as an output by setting the bit in the direction register.
-    (*(volatile u08*) (DDR_ADR)) |= (1 << pinNumber);
+    (*(volatile u08*) (DDR_ADR)) |= (1 << _pinNumber);
   }
   // If the pullup needs to be on configure it.
   if (_pullup) {
-    (*(volatile u08*) (PORT_ADR)) |= (1 << pinNumber);
+    (*(volatile u08*) (PORT_ADR)) |= (1 << _pinNumber);
   } else {
-    (*(volatile u08*) (PORT_ADR)) &= ~(1 << pinNumber);
+    (*(volatile u08*) (PORT_ADR)) &= ~(1 << _pinNumber);
   }
 }
 //****************************************************************************************
-void Cpin::setDir(ePinDir dir) {
-  if (dir == ePinIn) {
+void Cpin::setDir(ePinDir _dir) {
+  if (_dir == ePinIn) {
     // Set the pin as an input by clearing the bit in the direction register.
     (*(volatile u08*) (DDR_ADR)) &= ~(1 << pin);
   } else {
@@ -53,36 +53,52 @@ void  Cpin::pullup(bool _pullup) {
   }
 }
 //****************************************************************************************
-void Cpin::setlogic(bool _activeLow) {
-  activeLow = _activeLow;
+bool Cpin::isHigh(void) {
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x1);
 }
 //****************************************************************************************
-bool Cpin::isSet(void) {
-  if (activeLow) {
-    return ((((*(volatile u08*) (this->pinAdr)) >> pin) & 0x1) == 0x0);
+bool Cpin::isLow(void) {
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x0);
+}
+//****************************************************************************************
+void Cpin::setHigh(void) {
+    *(volatile u08*) (PORT_ADR) |= (0x1 << pin);
+}
+//****************************************************************************************
+void Cpin::setLow(void) {
+    *(volatile u08*) (PORT_ADR) &= ~(0x1 << pin);
+}
+//****************************************************************************************
+void Cpin::setPolarity(bool _isActiveLow) {
+  isActiveLow = _isActiveLow;
+}
+//****************************************************************************************
+bool Cpin::isEnabled(void) {
+  if (isActiveLow) {
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x0);
   } else {
-    return ((((*(volatile u08*) (this->pinAdr)) >> pin) & 0x1) == 0x1);
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x1);
   }
 }
 //****************************************************************************************
-bool Cpin::isClr(void) {
-  if (activeLow) {
-    return ((((*(volatile u08*) (this->pinAdr)) >> pin) & 0x1) == 0x1);
+bool Cpin::isDisabled(void) {
+  if (isActiveLow) {
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x1);
   } else {
-    return ((((*(volatile u08*) (this->pinAdr)) >> pin) & 0x1) == 0x0);
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x0);
   }
 }
 //****************************************************************************************
-void Cpin::set(void) {
-  if (!activeLow) {
+void Cpin::enable(void) {
+  if (!isActiveLow) {
     *(volatile u08*) (PORT_ADR) |= (0x1 << pin);
   } else {
     *(volatile u08*) (PORT_ADR) &= ~(0x1 << pin);
   }
 }
 //****************************************************************************************
-void Cpin::clr(void) {
-  if (!activeLow) {
+void Cpin::disable(void) {
+  if (!isActiveLow) {
     *(volatile u08*) (PORT_ADR) &= ~(0x1 << pin);
   } else {
     *(volatile u08*) (PORT_ADR) |= (0x1 << pin);
@@ -90,10 +106,10 @@ void Cpin::clr(void) {
 }
 //****************************************************************************************
 void Cpin::toggle(void) {
-  if (isClr()) {
-    set();
+  if (isDisabled()) {
+    enable();
   } else {
-    clr();
+    disable();
   }
 }
 //****************************************************************************************

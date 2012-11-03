@@ -86,7 +86,7 @@ class SL018
 	public:
 		SL018(CI2C *_i2c, Cpin *_stpin, u08 _addr);
 		bool read(void);
-		bool present() { return(stpin->isSet()); };
+		bool present() { return(stpin->isEnabled()); };
 		c08* tagName(u08 type);
 		bool login(u08 sector);
 		bool login(u08 sector, u08 keyType, u08 key[6]);

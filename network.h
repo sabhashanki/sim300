@@ -33,11 +33,11 @@ namespace CNETWORK {
     STATE_PACKET_AVAILABLE
   } eState;
   /****************************************************************************************/
-  class CNetwork {
+  class Cnetwork {
     private:
       static const u08 BROADCAST_NODE_ID = 0;
       static const u08 UNCONF_NODE_ID = 0;
-      Cuart* UART;
+      Cuart* uart;
       u08 cntByte;
       u32 timeLimit;
       u16 baudRate;
@@ -49,15 +49,12 @@ namespace CNETWORK {
       volatile u32 time;
       sHeader Header;
       u08* payload;
-      CNetwork(Cuart* UART, u08 size);
-      CNetwork(Cuart* UART, u08 size, u08 node);
+      Cnetwork(Cuart* UART, u08 size, u08 node);
       u08 setPayloadBufSize(u08 size);
       void service(void);
       u08 packetAvailable(void);
       void reset(void);
       void tx(u08 transactNum, u08 dstNode, u08* dat, u08 byteCnt);
-      u08 nodeidGet(void);
-      void nodeidSet(u08 ID);
   };
 /****************************************************************************************/
 }
