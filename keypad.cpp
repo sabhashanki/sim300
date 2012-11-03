@@ -68,7 +68,7 @@ bool Ckeypad::readKey(u08* key) {
   if (!Transport->read((u08*)&rsp, (u08*) &Cmd, sizeof(sKeypadCmd), nodeID)) {
     return false;
   }
-  if (rsp.Hdr.Opcode != GET_KEYPAD_KEY || !rsp.Hdr.Result) {
+  if (rsp.Hdr.Opcode != Cmd.Opcode || !rsp.Hdr.Result) {
     return false;
   }
   *key = rsp.Dat.Key;
