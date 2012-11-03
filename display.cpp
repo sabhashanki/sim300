@@ -25,7 +25,7 @@ Cdisplay::Cdisplay(Ctransport* _Transport, u08 _nodeID) {
   sendStringHdl = HANDLE_EMPTY;
   sendClearHdl = HANDLE_EMPTY;
   nodeID = _nodeID;
-  cnt=0;
+  cnt = 0;
 }
 
 bool Cdisplay::available(void) {
@@ -68,28 +68,8 @@ void Cdisplay::service(void) {
         performSet = false;
         State = IDLE;
       }
-      /*
-       if (cnt < 4) {
-       if (Line[cnt].update == 1) {
-       if (sendString(Line[cnt].size, Line[cnt].xPos, cnt, Line[cnt].content)) {
-       Line[cnt].update = 0;
-       } else {
-       cnt++;
-       }
-       } else if (Line[cnt].update == 2) {
-       if (sendString_P(Line[cnt].xPos, cnt, Line[cnt].content_P)) {
-       Line[cnt].update = 0;
-       } else {
-       cnt++;
-       }
-       } else {
-       performSet = false;
-       State = IDLE;
-       }
-       */
       break;
   }
-
 }
 
 bool Cdisplay::clear(void) {

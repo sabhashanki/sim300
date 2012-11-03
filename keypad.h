@@ -18,7 +18,7 @@ using namespace LCDKEYPAD;
 #define KEYBUF_SIZE           32
 /****************************************************************************************/
 class Ckeypad: public Csignal {
-    static const f32 period = 20e-3;
+    static const f32 period = 5;
     bool getKey(u08* key);
     Ctransport* Transport;
     sKeypadCmd Cmd;
