@@ -118,7 +118,7 @@ void Ci2c::sendByte(u08 data) {
   outb(TWCR, (inb(TWCR)&TWCR_CMD_MASK)|BV(TWINT));
 }
 
-void Ci2c::receiveByte(u08 ackFlag) {
+void Ci2c::receiveByte(bool ackFlag) {
   // begin receive over i2c
   if (ackFlag) {
     // ackFlag = TRUE: ACK the recevied data
@@ -363,10 +363,10 @@ void Ci2c::service() {
 #endif
       if (receiveDataIndex < (receiveDataLength - 1))
         // data byte will be received, reply with ACK (more bytes in transfer)
-        receiveByte(TRUE);
+        receiveByte(true);
       else
         // data byte will be received, reply with NACK (final byte in transfer)
-        receiveByte(FALSE);
+        receiveByte(false);
       break;
 
       // Slave Receiver status codes
@@ -399,11 +399,11 @@ void Ci2c::service() {
       // check receive buffer status
       if (receiveDataIndex < I2C_RECEIVE_DATA_BUFFER_SIZE) {
         // receive data byte and return ACK
-        receiveByte(TRUE);
+        receiveByte(true);
         //outb(TWCR, (inb(TWCR)&TWCR_CMD_MASK)|BV(TWINT)|BV(TWEA));
       } else {
         // receive data byte and return NACK
-        receiveByte(FALSE);
+        receiveByte(false);
         //outb(TWCR, (inb(TWCR)&TWCR_CMD_MASK)|BV(TWINT));
       }
       break;
@@ -415,7 +415,7 @@ void Ci2c::service() {
       //rprintfInit(uart1SendByte);
 #endif
       // receive data byte and return NACK
-      receiveByte(FALSE);
+      receiveByte(false);
       //outb(TWCR, (inb(TWCR)&TWCR_CMD_MASK)|BV(TWINT));
       break;
     case TW_SR_STOP: // 0xA0: STOP or REPEATED START has been received while addressed as slave

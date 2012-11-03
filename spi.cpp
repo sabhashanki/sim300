@@ -10,23 +10,31 @@
 #include "spi.h"
 #include "common.h"
 
-#define CS()                      clrBit(PORTB, 2)
-#define nCS()                     setBit(PORTB, 2)
-#define MISO_WAIT()               LOOP_UNTIL_BIT_IS_LO(PINB,4);
+#define CS()                      clrBit(PORTB, 4);// pinCS->setLow();
+#define nCS()                     setBit(PORTB, 4); // pinCS->setLow();
+#define MISO_WAIT()               LOOP_UNTIL_BIT_IS_LO(PINB, 3); //while(pinMISO->isHigh()){};//;
+
 #define START()                   CS(); MISO_WAIT();
 #define STOP()                    nCS();
 
 /****************************************************************************************/
-Cspi::Cspi(Cpin* _pinSS, Cpin* _pinMOSI, Cpin* _pinMISO, Cpin* _pinSCK, eSpiMode _mode, eSpiSpeed _spiSpeed , bool msbFirst, bool master, bool clk2X){
-
-
+Cspi::Cspi(Cpin* _pinMOSI, Cpin* _pinSCK, Cpin* _pinMISO, Cpin* _pinSS, Cpin* _pinCS, eSpiMode _mode, eSpiSpeed _spiSpeed , bool msbFirst, bool master){
   pinMISO = _pinMISO;
-  pinSS = _pinSS;
+  // If a different Pin than SPI_SS is used as a chip select
+  // Make sure SPI_SS is an output before setting SPI as a master
+  if(_pinCS){
+    _pinSS->setDir(ePinOut);
+    _pinSS->setHigh();
+    pinCS = _pinCS;
+  }else{
+    pinCS = _pinSS;
+  }
+  pinCS->setDir(ePinOut);
+  pinCS->setHigh();
+  _pinMOSI->setLow();
+  _pinSCK->setHigh();
+
   STOP();
-
-  //_pinMOSI->setLO();
-	//_pinSCK->setHI();
-
   // enable SPI Master, MSB, SPI mode 0, FOSC/4
   SPCR = 0;
   // Data order MSB first
@@ -40,47 +48,60 @@ Cspi::Cspi(Cpin* _pinSS, Cpin* _pinMOSI, Cpin* _pinMISO, Cpin* _pinSCK, eSpiMode
   } else {
     clrBit(SPCR, MSTR);
   }
-  if (clk2X) {
-    setBit(SPSR, SPI2X);
-  } else {
-    clrBit(SPSR, SPI2X);
-  }
-  // enable SPI
-  setBit(SPCR, SPE);
   this->mode = _mode;
-  setmode(mode);
+  setMode(mode);
+  setSpeed(_spiSpeed);
 
+  // HACK FIXUP
+  BIT_SET_HI(DDRB, 0); // set SS as output !! IMPORTANT TO BE ENABLE MASTER !!
+  BIT_SET_HI(DDRB, 1); // set SCK as output
+  BIT_SET_LO(DDRB, 3); // set MISO as input
+  BIT_SET_HI(DDRB, 2); // set MOSI as output
+
+  BIT_SET_HI(PORTB, 1); // set SCK hi
+
+  // setup SPI interface :
+  // master mode
+  BIT_SET_HI(SPCR, MSTR);
+  // clock = f/64
+  BIT_SET_LO(SPCR, SPR0);
+  BIT_SET_HI(SPCR, SPR1);
+  // enable SPI
+  //setBit(SPCR, SPE);
+  BIT_SET_HI(SPCR, SPE);
+
+}
+
+void Cspi::setSpeed(eSpiSpeed _spiSpeed){
   switch(_spiSpeed){
-    case SPI_SPEED_FOSC_2_2X:
+    if(_spiSpeed > SPI_SPEED_FOSC_128){
       setBit(SPSR, SPI2X);
+    }
+    case SPI_SPEED_FOSC_2_2X:
     case SPI_SPEED_FOSC_4:
       clrBit(SPCR, SPR0);
       clrBit(SPCR, SPR1);
       break;
     case SPI_SPEED_FOSC_8_2X:
-      setBit(SPSR, SPI2X);
     case SPI_SPEED_FOSC_16:
       setBit(SPCR, SPR0);
       clrBit(SPCR, SPR1);
       break;
     case SPI_SPEED_FOSC_32_2X:
-      setBit(SPSR, SPI2X);
     case SPI_SPEED_FOSC_64:
       clrBit(SPCR, SPR0);
       setBit(SPCR, SPR1);
       break;
     case SPI_SPEED_FOSC_64_2X:
-      setBit(SPSR, SPI2X);
     case SPI_SPEED_FOSC_128:
       setBit(SPCR, SPR0);
       setBit(SPCR, SPR1);
       break;
   }
-}
 
+}
 /****************************************************************************************/
-void Cspi::setmode(eSpiMode _mode) {
-  /*
+void Cspi::setMode(eSpiMode _mode) {
   switch(_mode){
       case SPI_MODE_0:
         clrBit(SPCR, CPOL);
@@ -99,7 +120,6 @@ void Cspi::setmode(eSpiMode _mode) {
         setBit(SPCR, CPHA);
         break;
     }
-    */
 }
 
 /****************************************************************************************/

@@ -17,28 +17,12 @@
 //		which can be found at http://www.gnu.org/licenses/gpl.txt
 //
 //*****************************************************************************
-
-
 #ifndef TYPES_H
 #define TYPES_H
-
-#ifndef WIN32
-	// true/false defines
-	#define FALSE	0
-	#define TRUE	1
-
-#define true (1==1)
-#define false (0==1)
-
-#define UART_DEVICE_CNT   1 /**< UART device number */
-#define SUPPORT_UART_ONE
-#define CLK_CPU     8000000   /**< 8Mhz(for serial) */
-
 
 #define SUCCESS  0
 #define ERROR    0xFF
 #define TIMEOUT  0xFE
-#endif
 
 typedef unsigned int uint;
 
@@ -125,17 +109,6 @@ typedef void (*u08FuncPtr)(u08);
 //typedef u08 (* const u08FuncPtr_Retu08)(*u08);
 
 
-/* use inttypes.h instead
-// C99 standard integer type definitions
-typedef unsigned char	uint8_t;
-typedef   signed char	int8_t;
-typedef unsigned short	uint16_t;
-typedef   signed short	int16_t;
-typedef unsigned long	uint32_t;
-typedef   signed long	int32_t;
-typedef unsigned long	uint64_t;
-typedef   signed long	int64_t;
-*/
 // maximum value that can be held
 // by unsigned data types (8,16,32bits)
 #define MAX_U08	255
@@ -151,33 +124,20 @@ typedef   signed long	int64_t;
 #define MIN_S32	-2147483648
 #define MAX_S32	2147483647
 
-#ifndef outb
+#define setGroup(var,groupmask,value) {var &= ~(groupmask);var |= (value);}
+#define setBit(var,bitposition)       {var |=(1<<bitposition);}
+#define clrBit(var,bitposition)       {var &= ~(1<<bitposition);}
+
 #define outb(addr, data)  addr = (data)
-#endif
-#ifndef inb
 #define inb(addr)     (addr)
-#endif
-#ifndef outw
+#define inb(addr)     (addr)
 #define outw(addr, data)  addr = (data)
-#endif
-#ifndef inw
 #define inw(addr)     (addr)
-#endif
-#ifndef BV
 #define BV(bit)     (1<<(bit))
-#endif
-#ifndef cbi
 #define cbi(reg,bit)  reg &= ~(BV(bit))
-#endif
-#ifndef sbi
 #define sbi(reg,bit)  reg |= (BV(bit))
-#endif
-#ifndef cli
 #define cli()     __asm__ __volatile__ ("cli" ::)
-#endif
-#ifndef sei
 #define sei()     __asm__ __volatile__ ("sei" ::)
-#endif
 
 
 // use this for packed structures
@@ -196,7 +156,6 @@ typedef   signed long	int64_t;
 // constants
 #define PI    3.14159265359
 
-#ifndef WIN32
 #define CYCLES_PER_US ((F_CPU+500000)/1000000)  // cpu cycles per microsecond
 #define US 1000
 #define MS 1000000
@@ -250,6 +209,5 @@ typedef   signed long	int64_t;
 #define NDEF8x  !(DEF8x)
 #define DEF164  defined(__AVR_ATmega164P__ || defined(__AVR_ATmega644__))
 #define NDEF164 !(DEF164)
-#endif
 
 #endif

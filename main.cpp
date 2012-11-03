@@ -51,10 +51,12 @@ int main(void) {
   display.writeStringP(PSTR("to lid..."), 0, 1, false);
 
   while (1) {
-    scanRFID();
+    if (tag.present()) {
+      tag.read();
+    }
     //modem.service();
     //socket.service();
-    keypad.service();
+    //keypad.service();
   }
 
   error: while (1) {

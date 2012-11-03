@@ -95,7 +95,7 @@ namespace I2C {
       void sendStop(void);
       void waitForComplete(void);
       void sendByte(u08 data);
-      void receiveByte(u08 ackFlag);
+      void receiveByte(bool ackFlag);
       u08 getReceivedByte(void);
       u08 getStatus(void);
   };

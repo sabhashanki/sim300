@@ -38,16 +38,17 @@ typedef enum {
 class Cspi {
   private:
 	eSpiMode mode;
-	void setmode(eSpiMode _mode);
+	void setMode(eSpiMode _mode);
+	void setSpeed(eSpiSpeed _spiSpeed);
 public:
-	Cspi(Cpin* _pinSS, Cpin* _pinMOSI, Cpin* _pinMISO, Cpin* _pinSCK,
+
+	Cspi(Cpin* _pinMOSI, Cpin* _pinSCK, Cpin* _pinMISO, Cpin* _pinSS, Cpin* _pinCS = 0,
         eSpiMode _mode = SPI_MODE_0,
         eSpiSpeed _spiSpeed = SPI_SPEED_FOSC_4,
         bool msbFirst = true,
-        bool master = true,
-        bool clk2X = false
+        bool master = true
 			);
-	Cpin* pinSS;
+	Cpin* pinCS;
 	Cpin* pinMISO;
 	u08 send(u08 value);
 	u08 read(u08 adr);
