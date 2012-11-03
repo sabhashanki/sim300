@@ -13,27 +13,27 @@
 /****************************************************************************************/
 #undef DEBUG_SCHEDULER
 /****************************************************************************************/
-static Ctimer timer(0, Csignal::divisor, CONTINUOUS);
+static Ctimer timer(0, Cscheduler::divisor, CONTINUOUS);
 /****************************************************************************************/
-Csignal* signals[Csignal::maxSignals];
+Csignal* signals[Cscheduler::maxSignals];
 Cscheduler::Cscheduler scheduler;
 /****************************************************************************************/
 Cscheduler::Cscheduler(void) {
   u08 cnt;
   timer.attach(service);
-  for (cnt = 0; cnt < Csignal::maxSignals; cnt++) {
+  for (cnt = 0; cnt < maxSignals; cnt++) {
     signals[cnt] = 0;
   }
 }
 /****************************************************************************************/
 void Cscheduler::start(void) {
   timer.enableInterrupt(OVERFLOW);
-  timer.start(Csignal::periodCnt);
+  timer.start(periodCnt);
 }
 /****************************************************************************************/
 bool Cscheduler::attach(Csignal* _signal) {
   u08 cnt = 0;
-  while (cnt < Csignal::maxSignals) {
+  while (cnt < maxSignals) {
     if (signals[cnt] == 0) {
       signals[cnt] = _signal;
       return true;
@@ -45,7 +45,7 @@ bool Cscheduler::attach(Csignal* _signal) {
 /****************************************************************************************/
 void Cscheduler::service(void) {
   u08 cnt;
-  for (cnt = 0; cnt < Csignal::maxSignals; cnt++) {
+  for (cnt = 0; cnt < maxSignals; cnt++) {
     if (signals[cnt] != 0) {
       signals[cnt]->tick();
     }

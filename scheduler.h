@@ -26,12 +26,13 @@ class Csignal {
     bool set;
     u16 period;
     u16 ticks;
+    static const f32 tickBase = (0.0177083);
   public:
-    static const u08 divisor = COUNTER_CLK_DIV1024;
-    static const u08 periodCnt = (255);
-    static const f32 tickBase = 0.0177083;
-    //static const f32 tickBase = (u32)((u16)1024 * (u08)periodCnt) / F_CPU;
-    static const u08 maxSignals = 8;
+    Csignal(f32 _servicePeriodSeconds) {
+      set = false;
+      ticks = 0;
+      setPeriod(_servicePeriodSeconds);
+    }
     Csignal() {
       set = false;
       ticks = 0;
@@ -40,8 +41,8 @@ class Csignal {
       set = false;
       ticks = 0;
     }
-    void setPeriod(u16 _period) {
-      period = _period;
+    void setPeriod(f32 _seconds) {
+      period = _seconds / tickBase;
     }
     bool isSet(void) {
       bool _s = set;
@@ -58,13 +59,14 @@ class Csignal {
 };
 /****************************************************************************************/
 class Cscheduler {
-  private:
-    //static sSignal* signals[SCHEDULER::MAX_SIGNALS];
   public:
     Cscheduler(void);
     bool attach(Csignal* signal);
     static void service(void);
     void start(void);
+    static const u08 periodCnt = (255);
+    static const u08 divisor = COUNTER_CLK_DIV1024;
+    static const u08 maxSignals = 8;
 };
 /****************************************************************************************/
 using namespace SCHEDULER;

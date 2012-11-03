@@ -29,6 +29,7 @@ namespace CSOCKET {
 }
 /****************************************************************************************/
 class Csocket: public Cserial {
+    static const f32 period = 1.0;
     u08 socketNr;
     u16 port;
     bool print;

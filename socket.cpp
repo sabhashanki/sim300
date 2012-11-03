@@ -33,7 +33,7 @@ Csocket::Csocket(Cmodem* _modem, u16 _bufSize, bool _autoclose) {
   rxOverflowCnt = 0;
   txBusy = false;
   print = true;
-  signal.setPeriod(1 / Csignal::tickBase);
+  signal.setPeriod(period);
   scheduler.attach(&signal);
   autoclose = _autoclose;
 }

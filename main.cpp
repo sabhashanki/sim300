@@ -51,6 +51,8 @@ int main(void) {
     _delay_ms(10);
     modem.service();
     socket.service();
+    network.service();
+    transport.service();
     if (testSend) {
       server.sendTestPkt();
       testSend = false;
