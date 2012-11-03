@@ -2,7 +2,7 @@
 #include "main.h"
 /****************************************************************************************/
 static const u16 adrPortB = 0x23;
-static const u08 radioPktLen =  4;
+static const u08 radioPktLen = 4;
 /****************************************************************************************/
 c08 msg[16];
 Cuart debugUart(0, 115200);
@@ -27,15 +27,12 @@ Cpin pinGDO2(adrPortB, 7, ePinIn, true);
 Csl018 tag(&i2c, &tagpin, 0xA0);
 Cspi spi(&pinMOSI, &pinSCK, &pinMISO, &pinSS, &rfCS, SPI_MODE_0, SPI_SPEED_FOSC_64);
 CC1101 rf(&spi, &pinGDO0, &pinGDO2, radioPktLen);
+
 /****************************************************************************************/
 void hello() {
   debugUart.sendStr_P(PSTR("\n\r  ===== Manhole Lock System ====="));
   display.writeClear();
   display.writeStringP(PSTR("Initializing..."));
-}
-/****************************************************************************************/
-bool scanRFID() {
-
 }
 
 /****************************************************************************************/

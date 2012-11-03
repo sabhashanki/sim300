@@ -33,6 +33,42 @@ Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup, bool _a
     (*(volatile u08*) (PORT_ADR)) &= ~(1 << _pinNumber);
   }
 }
+/****************************************************************************************/
+
+Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinState _state, bool _activeLow) {
+  this->pinAdr = _portBaseAdr;
+  this->pin = _pinNumber;
+  this->isActiveLow = _activeLow;
+
+
+
+
+  // Set the pin as an output by setting the bit in the direction register.
+  (*(volatile u08*) (DDR_ADR)) |= (1 << _pinNumber);
+
+  // If the pullup needs to be on configure it.
+  if (_state == ePinHigh) {
+    setHigh();
+  } else {
+    setLow();
+  }
+}
+/****************************************************************************************/
+Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, bool _pullup,
+           bool _activeLow) {
+  this->pinAdr = _portBaseAdr;
+  this->pin = _pinNumber;
+  this->isActiveLow = _activeLow;
+  // Set the pin as an input by clearing the bit in the direction register.
+  (*(volatile u08*) (DDR_ADR)) &= ~(1 << _pinNumber);
+  // If the pullup needs to be on configure it.
+  if (_pullup) {
+    (*(volatile u08*) (PORT_ADR)) |= (1 << _pinNumber);
+  } else {
+    (*(volatile u08*) (PORT_ADR)) &= ~(1 << _pinNumber);
+  }
+}
+
 //****************************************************************************************
 void Cpin::setDir(ePinDir _dir) {
   if (_dir == ePinIn) {

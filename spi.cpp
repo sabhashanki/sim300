@@ -10,13 +10,6 @@
 #include "spi.h"
 #include "common.h"
 
-#define CS()                      clrBit(PORTB, 4);// pinCS->setLow();
-#define nCS()                     setBit(PORTB, 4); // pinCS->setLow();
-#define MISO_WAIT()               LOOP_UNTIL_BIT_IS_LO(PINB, 3); //while(pinMISO->isHigh()){};//;
-
-#define START()                   CS(); MISO_WAIT();
-#define STOP()                    nCS();
-
 /****************************************************************************************/
 Cspi::Cspi(Cpin* _pinMOSI, Cpin* _pinSCK, Cpin* _pinMISO, Cpin* _pinSS, Cpin* _pinCS, eSpiMode _mode, eSpiSpeed _spiSpeed , bool msbFirst, bool master){
   pinMISO = _pinMISO;
@@ -33,10 +26,8 @@ Cspi::Cspi(Cpin* _pinMOSI, Cpin* _pinSCK, Cpin* _pinMISO, Cpin* _pinSS, Cpin* _p
   pinCS->setHigh();
   _pinMOSI->setLow();
   _pinSCK->setHigh();
+  stop();
 
-  STOP();
-  // enable SPI Master, MSB, SPI mode 0, FOSC/4
-  SPCR = 0;
   // Data order MSB first
   if (msbFirst) {
     clrBit(SPCR, DORD);
@@ -51,25 +42,7 @@ Cspi::Cspi(Cpin* _pinMOSI, Cpin* _pinSCK, Cpin* _pinMISO, Cpin* _pinSS, Cpin* _p
   this->mode = _mode;
   setMode(mode);
   setSpeed(_spiSpeed);
-
-  // HACK FIXUP
-  BIT_SET_HI(DDRB, 0); // set SS as output !! IMPORTANT TO BE ENABLE MASTER !!
-  BIT_SET_HI(DDRB, 1); // set SCK as output
-  BIT_SET_LO(DDRB, 3); // set MISO as input
-  BIT_SET_HI(DDRB, 2); // set MOSI as output
-
-  BIT_SET_HI(PORTB, 1); // set SCK hi
-
-  // setup SPI interface :
-  // master mode
-  BIT_SET_HI(SPCR, MSTR);
-  // clock = f/64
-  BIT_SET_LO(SPCR, SPR0);
-  BIT_SET_HI(SPCR, SPR1);
-  // enable SPI
-  //setBit(SPCR, SPE);
-  BIT_SET_HI(SPCR, SPE);
-
+  setBit(SPCR, SPE); // Not really Object orientated - should have a base address here
 }
 
 void Cspi::setSpeed(eSpiSpeed _spiSpeed){
@@ -126,51 +99,51 @@ void Cspi::setMode(eSpiMode _mode) {
 u08 Cspi::read(u08 adr) {
   u08 ret;
   adr |= _BV(7);  //RD / nWR  TODO Confirm this is generic to all SPI Reads
-  START();
+  start();
   send(adr);
   ret = send(0x00);
-  STOP();
+  stop();
   return ret;
 }
 
 /****************************************************************************************/
 void Cspi::read(u08 adr, u08* dat, u08 len ) {
   adr |= _BV(7);  //RD / nWR  TODO Confirm this is generic to all SPI Reads
-  START();
+  start();
   send(adr);
   for (u08 i = 0; i < len; i++) {
     dat[i] = send(0x00);
   }
-  STOP()
+  stop();
 }
 
 /****************************************************************************************/
 // Write a value "dat" to a register at adr
 /****************************************************************************************/
 void Cspi::write(u08 adr, u08 dat) {
-  START();
+  start();
   send(adr);
   send(dat);
-  STOP();
+  stop();
 }
 /****************************************************************************************/
 // Write an array of values "dat" to a register at adr
 /****************************************************************************************/
 void Cspi::write(u08 adr, u08* dat, u08 len ) {
-  START();
+  start();
   send(adr);
   for (u08 i = 0; i < len; i++) {
     send(dat[i]);
   }
-  STOP();
+  stop();
 }
 /****************************************************************************************/
 u08 Cspi::strobe(u08 value) {
   u08 ret;
 
-  START();
+  start();
   ret = send(value);
-  STOP()
+  stop();
   return ret;
 }
 /****************************************************************************************/

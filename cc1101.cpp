@@ -22,19 +22,6 @@
 #define STATE_RXOVER  6
 #define STATE_TXUNDER 7
 
-/*
- Cpin pinSCK(0x23,5,ePinOut,true); //PORTB PIN 1
- Cpin pinMOSI(0x23,3,ePinOut,true);//PORTB PIN 2
- Cpin pinMISO(0x23,4,ePinIn,true); //PORTB PIN 3
- Cpin rfCS(0x23,2,ePinOut,true);   //PORTB PIN 4
- */
-
-#define CS()                      clrBit(PORTB, 4)
-#define nCS()                     setBit(PORTB, 4)
-#define MISO_WAIT()               LOOP_UNTIL_BIT_IS_LO(PINB,3);
-#define START()                   CS(); MISO_WAIT();
-#define STOP()                    nCS();
-
 /**************************************************************************************
  * PATABLE
  ***************************************************************************************/
@@ -45,6 +32,7 @@ static CC1101* pCC1101;
 CC1101::CC1101(Cspi *_spi, Cpin *_pinGDO0, Cpin *_pinGDO2, u08 _payloadSize, u08 _addr,
                u08 _chnl, u08 _rxbuflen, u08 _txbuflen, etxType _txType) {
 
+  spi = _spi;
   pCC1101 = this;
   pinGDO0 = _pinGDO0;
   pinGDO2 = _pinGDO2;
@@ -52,9 +40,6 @@ CC1101::CC1101(Cspi *_spi, Cpin *_pinGDO0, Cpin *_pinGDO2, u08 _payloadSize, u08
   setPayloadSize(_payloadSize);
   rxFifo.setBufSize(_rxbuflen);
   txFifo.setBufSize(_txbuflen);
-
-  setBit(DDRB, 4);
-  // CS is an output
 
   reset();
   setupRFStudio();
@@ -286,18 +271,18 @@ void CC1101::wait_MARCSTATE(u08 mode) {
  * Reset CC1101
  ****************************************************************************/
 void CC1101::reset(void) {
-  nCS(); //spi->pinSS->setHI();//HIGH
+  spi->pinCS->disable();
   _delay_us(5);
-  CS(); //spi->pinSS->setLO();//LOW
+  spi->pinCS->enable();
   _delay_us(10);
-  nCS(); //spi->pinSS->setHI();//HIGH
+  spi->pinCS->disable();
   _delay_us(41);
-  CS(); //spi->pinSS->setLO();//LOW
+  spi->pinCS->enable();
 
-  MISO_WAIT(); //while (spi->pinMISO->isHI()) {};
+  spi->wait();
   spi->send(CC1101_SRES);
-  MISO_WAIT(); //while (spi->pinMISO->isHI()) {};
-  nCS(); //spi->pinSS->setHI();
+  spi->wait();
+  spi->pinCS->disable();
 
 }
 

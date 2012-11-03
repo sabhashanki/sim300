@@ -32,6 +32,8 @@ class Cpin {
     u16 pinAdr;
   public:
     Cpin(u16 portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup = false, bool _isActiveLow = false);
+    Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinState _state, bool _activeLow = false);
+    Cpin(u16 _portBaseAdr, u08 _pinNumber, bool _pullup = false, bool _isActiveLow = false);
     bool isEnabled(void);
     bool isDisabled(void);
     void enable(void);

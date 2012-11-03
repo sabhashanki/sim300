@@ -40,6 +40,13 @@ class Cspi {
 	eSpiMode mode;
 	void setMode(eSpiMode _mode);
 	void setSpeed(eSpiSpeed _spiSpeed);
+	void start(){
+	  pinCS->enable();
+	  wait();
+	}
+	void stop(){
+	  pinCS->disable();
+	}
 public:
 
 	Cspi(Cpin* _pinMOSI, Cpin* _pinSCK, Cpin* _pinMISO, Cpin* _pinSS, Cpin* _pinCS = 0,
@@ -56,6 +63,9 @@ public:
 	void write(u08 adr, u08* dat ,u08 len);
 	void write(u08 adr, u08 dat);
 	u08 strobe(u08 value);
+	void wait(){
+	  while(pinMISO->isHigh()){};
+	}
 };
 /****************************************************************************************/
 #endif
