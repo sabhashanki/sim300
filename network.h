@@ -42,22 +42,23 @@ namespace CNETWORK {
       static const f32 period = 100e-3;
       Csignal timeout;
       Cuart* uart;
-      u08 cntByte;
-      u32 timeLimit;
       u16 baudRate;
       u08 payloadSize;
     public:
       Cnetwork(Cuart* _uartNr, u08 _node, u08 _size = 0x60);
-      u08 setPayloadBufSize(u08 size);
+      void setPayloadBufSize(u08 size);
       void service(void);
-      u08 packetAvailable(void);
-      void reset(void);
       void tx(u08 transactNum, u08 dstNode, u08* dat, u08 byteCnt);
+      void reset(void) {
+        uart->clearRx();
+        State = STATE_RX_HEADER;
+      }
+      u08 packetAvailable(void) {
+        return (State == STATE_PACKET_AVAILABLE);
+      }
 
       eState State;
       u08 NodeId;
-      u08 healthy;
-      volatile u32 time;
       sHeader Header;
       u08* payload;
   };
