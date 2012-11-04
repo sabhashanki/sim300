@@ -89,7 +89,7 @@ bool Cserver::statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus* 
   sDataBinHeader binHdr;
   u08 cnt = 0;
 
-  while (cnt++ < 40) {
+  while (cnt++ < 4) {
     reset();
 
     Header.Length = 13 + strlen((c08*) strID) + strlen((c08*) strGPS)
