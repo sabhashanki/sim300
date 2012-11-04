@@ -238,7 +238,6 @@ bool Cmodem::connect(void) {
   ss = SOCK_ESTABLISHED;
   return true;
 }
-
 /*******************************************************************************/
 bool Cmodem::disconnect(void) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
