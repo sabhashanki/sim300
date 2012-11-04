@@ -105,7 +105,7 @@ bool Cdisplay::writeClear(void) {
   sKeypadResp rsp;
   memset(&Cmd, 0, sizeof(sKeypadCmd));
   Cmd.Opcode = CLEAR_LCD;
-  if (!Transport->read((u08*) &rsp, (u08*) &Cmd, sizeof(sKeypadCmd), nodeID)) {
+  if (!Transport->read((u08*) &rsp, (u08*) &Cmd, 1, nodeID)) {
     return false;
   }
   if (rsp.Hdr.Opcode != Cmd.Opcode || !rsp.Hdr.Result) {
@@ -131,18 +131,20 @@ bool Cdisplay::sendClear(void) {
 }
 
 bool Cdisplay::writeStringP(prog_char* _str, u08 _xPos, u08 _yPos, bool _clear) {
-  c08* str;
-  strcpy_P(str, _str);
+  c08 str[32];
+  strncpy_P(str, _str, maxLineLen);
   return (writeString(str, _xPos, _yPos, _clear));
 }
 
 bool Cdisplay::writeString(const char* _str, u08 _xPos, u08 _yPos, bool _clear) {
   sKeypadResp rsp;
-  if (_clear)
-    writeClear();
+  if (_clear) {
+    if (!writeClear())
+      return false;
+  }
   memset(&Cmd, 0, sizeof(sKeypadCmd));
   Cmd.Opcode = SET_LCD_STRING;
-  Cmd.Dat.DisplayText.StrLen = strlen(_str);
+  Cmd.Dat.DisplayText.StrLen = MIN(strlen(_str),maxLineLen);
   Cmd.Dat.DisplayText.xPos = _xPos;
   Cmd.Dat.DisplayText.yPos = _yPos;
   memcpy(Cmd.Dat.DisplayText.Str, _str, Cmd.Dat.DisplayText.StrLen);

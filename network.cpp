@@ -40,95 +40,88 @@ u08 Cnetwork::setPayloadBufSize(u08 _size) {
 }
 /****************************************************************************************/
 void Cnetwork::service(void) {
-  while (uart->rxnum()) {
-    switch (State) {
-      case STATE_RX_HEADER:
-        if (uart->rxFIFO.read(&Header.Header, 1) == 1) {
-          if (Header.Header == HEADER) {
-            cntByte = 0;
-            State = STATE_RX_SIZE;
+  if (isSet()) {
+    while (uart->rxnum()) {
+      switch (State) {
+        case STATE_RX_HEADER:
+          if (uart->rxFifo.read(&Header.Header, 1) == 1) {
+            if (Header.Header == HEADER) {
+              cntByte = 0;
+              State = STATE_RX_SIZE;
+            }
           }
-        }
-        break;
-      case STATE_RX_SIZE:
-        if (uart->rxFIFO.read(&Header.Size, 1) == 1) {
-          State = STATE_RX_NOT_SIZE;
-        }
-        break;
-      case STATE_RX_NOT_SIZE:
-        if (uart->rxFIFO.read(&Header.NotSize, 1) == 1) {
-          if ((Header.Size ^ Header.NotSize) == 0xFF) {
-            State = STATE_RX_DST_NODE;
-          } else {
-            State = STATE_RX_HEADER;
+          break;
+        case STATE_RX_SIZE:
+          if (uart->rxFifo.read(&Header.Size, 1) == 1) {
+            State = STATE_RX_NOT_SIZE;
           }
-        }
-        break;
-      case STATE_RX_DST_NODE:
-        if (uart->rxFIFO.read(&Header.DstNode, 1) == 1) {
-          State = STATE_RX_SRC_NODE;
-        }
-        break;
-      case STATE_RX_SRC_NODE:
-        if (uart->rxFIFO.read(&Header.SrcNode, 1) == 1) {
-          State = STATE_RX_TRANSACT_NUM;
-        }
-        break;
-      case STATE_RX_TRANSACT_NUM:
-        if (uart->rxFIFO.read(&Header.TransactNum, 1) == 1) {
-          State = STATE_RX_CRC;
-        }
-        break;
-      case STATE_RX_CRC:
-        if (uart->rxFIFO.read(&Header.CRC, 1) == 1) {
-          cntByte = 0;
-          ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-          {
-            time = 0;
-          }
-          timeLimit = 2 * (Header.Size * 10 * 1000000) / (baudRate);
-          if (Header.DstNode == NodeId || Header.DstNode == BROADCAST_NODE_ID) {
-            State = STATE_RX_PAYLOAD;
-          } else {
-            State = STATE_SKIP_PAYLOAD;
-          }
-        }
-        break;
-      case STATE_SKIP_PAYLOAD:
-        if (uart->rxFIFO.read(&payload[0], 1) == 1) {
-          cntByte++;
-          if (cntByte == Header.Size) {
-            State = STATE_RX_HEADER;
-          }
-        }
-        break;
-      case STATE_RX_PAYLOAD:
-        if (uart->rxFIFO.read(&payload[cntByte], 1) == 1) {
-          cntByte++;
-          if (cntByte == Header.Size) {
-            u08 calcCrc;
-            calcCrc = crc8((u08*) payload, Header.Size);
-            if ((calcCrc == Header.CRC)
-                && (Header.DstNode == NodeId || Header.DstNode == BROADCAST_NODE_ID)) {
-              State = STATE_PACKET_AVAILABLE;
+          break;
+        case STATE_RX_NOT_SIZE:
+          if (uart->rxFifo.read(&Header.NotSize, 1) == 1) {
+            if ((Header.Size ^ Header.NotSize) == 0xFF) {
+              State = STATE_RX_DST_NODE;
             } else {
               State = STATE_RX_HEADER;
             }
           }
-        }
-        break;
-      case STATE_PACKET_AVAILABLE:
-        ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-        {
-          time = 0;
-        }
-        break;
-      default:
+          break;
+        case STATE_RX_DST_NODE:
+          if (uart->rxFifo.read(&Header.DstNode, 1) == 1) {
+            State = STATE_RX_SRC_NODE;
+          }
+          break;
+        case STATE_RX_SRC_NODE:
+          if (uart->rxFifo.read(&Header.SrcNode, 1) == 1) {
+            State = STATE_RX_TRANSACT_NUM;
+          }
+          break;
+        case STATE_RX_TRANSACT_NUM:
+          if (uart->rxFifo.read(&Header.TransactNum, 1) == 1) {
+            State = STATE_RX_CRC;
+          }
+          break;
+        case STATE_RX_CRC:
+          if (uart->rxFifo.read(&Header.CRC, 1) == 1) {
+            cntByte = 0;
+            if (Header.DstNode == NodeId || Header.DstNode == BROADCAST_NODE_ID) {
+              State = STATE_RX_PAYLOAD;
+            } else {
+              State = STATE_SKIP_PAYLOAD;
+            }
+          }
+          break;
+        case STATE_SKIP_PAYLOAD:
+          if (uart->rxFifo.read(&payload[0], 1) == 1) {
+            cntByte++;
+            if (cntByte == Header.Size) {
+              State = STATE_RX_HEADER;
+            }
+          }
+          break;
+        case STATE_RX_PAYLOAD:
+          if (uart->rxFifo.read(&payload[cntByte], 1) == 1) {
+            cntByte++;
+            if (cntByte == Header.Size) {
+              u08 calcCrc;
+              calcCrc = crc8((u08*) payload, Header.Size);
+              if ((calcCrc == Header.CRC)
+                  && (Header.DstNode == NodeId || Header.DstNode == BROADCAST_NODE_ID)) {
+                State = STATE_PACKET_AVAILABLE;
+              } else {
+                State = STATE_RX_HEADER;
+              }
+            }
+          }
+          break;
+        case STATE_PACKET_AVAILABLE:
+          break;
+        default:
+          State = STATE_RX_HEADER;
+          break;
+      }
+      if (timeout.isSet()) {
         State = STATE_RX_HEADER;
-        break;
-    }
-    if (timeout.isSet()) {
-      State = STATE_RX_HEADER;
+      }
     }
   }
 }
@@ -154,6 +147,7 @@ void Cnetwork::tx(u08 transactNum, u08 dstNode, u08* Dat, u08 byteCnt) {
   Header.SrcNode = NodeId;
   Header.TransactNum = transactNum;
   Header.CRC = crc8(Dat, byteCnt);
+  State = STATE_RX_HEADER;
   uart->write((c08*) &Header, sizeof(Header));
   uart->write((c08*) Dat, byteCnt);
 }

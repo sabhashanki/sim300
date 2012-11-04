@@ -30,7 +30,7 @@ const char AT_IP_CLOSE[] = "CLOSE OK";
 
 extern Cuart debugUart;
 /*******************************************************************************/
-Cmodem::Cmodem(Cuart * _pUart) :
+Cmodem::Cmodem(Cuart * _pUart, u08 bufSize) :
     Csignal(period) {
   usedns = false;
   pUart = _pUart;
@@ -55,7 +55,7 @@ Cmodem::Cmodem(Cuart * _pUart) :
   smstx_en = true;
   gprsrx = false;
   ss = SOCK_CLOSED;
-  rxFifo.setBufSize(255);
+  rxFifo.setBufSize(bufSize);
   scheduler.attach(this);
 }
 /*******************************************************************************/
@@ -69,11 +69,11 @@ bool Cmodem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
   while (cnt < 10) {
     cnt++;
     _delay_ms(del / 10);
-    pUart->rxFIFO.read((u08*) rxRsp, 0, true);
+    pUart->rxFifo.read((u08*) rxRsp, 0, true);
     if (strstr((const char*) rxRsp, (c08*) _expRsp))
       break;
   }
-  pUart->rxFIFO.read((u08*) rxRsp);
+  pUart->rxFifo.read((u08*) rxRsp);
   if (strstr((const char*) rxRsp, (c08*) _expRsp)) {
     return true;
   }
@@ -94,7 +94,7 @@ bool Cmodem::checkSignalStrength() {
   strcpy(expRsp, AT_OK);
   pUart->sendStr(cmd);
   _delay_ms(300);
-  pUart->rxFIFO.read((u08*) rxRsp);
+  pUart->rxFifo.read((u08*) rxRsp);
   if (strstr(rxRsp, expRsp)) {
     pStr = rxRsp;
     str = strsep(&pStr, ":");
@@ -119,7 +119,7 @@ bool Cmodem::checkSIM() {
   strcpy(exp, AT_OK);
   pUart->sendStr(cmd);
   _delay_ms(300);
-  pUart->rxFIFO.read((u08*) rsp);
+  pUart->rxFifo.read((u08*) rsp);
   if (strstr(rsp, exp)) {
     if (strstr(rsp, "+CPIN: READY")) {
       return true;
@@ -140,7 +140,7 @@ bool Cmodem::checkRegistration() {
   strcpy(exp, AT_OK);
   pUart->sendStr(cmd);
   _delay_ms(300);
-  pUart->rxFIFO.read((u08*) rsp);
+  pUart->rxFifo.read((u08*) rsp);
   if (strstr(rsp, exp)) {
     if (strstr(rsp, "+CREG: 0,1"))
       return true;
@@ -342,7 +342,7 @@ bool Cmodem::GetAtResp(char* _expRsp, c08* _rxRsp) {
 //      return false;
   }
   len = pUart->rxnum();
-  pUart->rxFIFO.read((u08*) rxRsp, len);
+  pUart->rxFifo.read((u08*) rxRsp, len);
   debugUart.sendStr(rxRsp);
   if (_rxRsp) {
     strcpy((char*) _rxRsp, rxRsp);
@@ -363,7 +363,7 @@ void Cmodem::service(void) {
 
   if (isSet()) {
     memset(gprsraw, 0, MDM_MAX_RX_CMD_LEN);
-    lenF = pUart->rxFIFO.read(gprsraw, 0, true);
+    lenF = pUart->rxFifo.read(gprsraw, 0, true);
     if (lenF) {
       pstr = strstr_P((c08*) gprsraw, PSTR("+IPD"));
       if (pstr != 0) {

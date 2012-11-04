@@ -38,15 +38,19 @@
 /****************************************************************************************/
 static Cuart* pUart[4];
 /****************************************************************************************/
-Cuart::Cuart(u08 uartNr, u32 baudRate, u16 bufSize) {
+Cuart::Cuart(u08 uartNr, u32 baudRate, u16 bufSize, bool _enable485) {
 	this->uartNr = uartNr;
 	this->baudRate = baudRate;
 	healthy = true;
-	if (!rxFIFO.setBufSize(bufSize))
+	if (!rxFifo.setBufSize(bufSize))
 		healthy = false;
-	if (!txFIFO.setBufSize(bufSize))
+	if (!txFifo.setBufSize(bufSize))
 		healthy = false;
-	this->enable485 = false;
+	this->enable485 = _enable485;
+	if (enable485){
+	  BIT_SET_HI(RS485_EN_DDR, RS485_EN_PIN);
+	  BIT_SET_LO(RS485_EN_PORT, RS485_EN_PIN);
+	}
 	// enable RxD/TxD and interrupts
 	switch (uartNr) {
 	case 0:
@@ -78,49 +82,8 @@ Cuart::Cuart(u08 uartNr, u32 baudRate, u16 bufSize) {
 }
 
 /****************************************************************************************/
-Cuart::Cuart(u08 uartNr, u32 baudRate, u16 bufSize, u08 enable485) {
-	this->uartNr = uartNr;
-	healthy = true;
-	if (!rxFIFO.setBufSize(bufSize))
-		healthy = false;
-	if (!txFIFO.setBufSize(bufSize))
-		healthy = false;
-	this->enable485 = true;
-	// enable RxD/TxD and interrupts
-	switch (uartNr) {
-	case 0:
-		UCSR0B = BV(RXCIE0) | BV(TXCIE0) | BV(RXEN0) | BV(TXEN0);
-		pUart[0] = this;
-		break;
-#ifdef UCSR1B
-	case 1:
-		UCSR1B = BV(RXCIE1) | BV(TXCIE1) | BV(RXEN1) | BV(TXEN1);
-		pUart[1] = this;
-		break;
-#endif
-#ifdef UCSR2B
-	case 2:
-	  UCSR2B = BV(RXCIE2) | BV(TXCIE2) | BV(RXEN2) | BV(TXEN2);
-		pUart[2] = this;
-		break;
-#endif
-#ifdef UCSR3B
-	case 3:
-	  UCSR3B = BV(RXCIE3) | BV(TXCIE3) | BV(RXEN3) | BV(TXEN3);
-		pUart[3] = this;
-		break;
-#endif
-	}
-	setBaudRate(baudRate);
-	rxOverflowCnt = 0;
-	txBusy = false;
-	BIT_SET_HI(RS485_EN_DDR, RS485_EN_PIN);
-	BIT_SET_LO(RS485_EN_PORT, RS485_EN_PIN);
-	//setFrame();
-}
-/****************************************************************************************/
 void Cuart::clearRx(void) {
-	rxFIFO.clear();
+	rxFifo.clear();
 }
 /****************************************************************************************/
 // prints a null-terminated string stored in program ROM
@@ -147,7 +110,7 @@ u16 Cuart::send_P(const prog_char buf[], u16 nBytes) {
   }
   while(nBytes){
     dat = pgm_read_byte(buf++);
-    res = txFIFO.write(&dat,1);
+    res = txFifo.write(&dat,1);
     nBytes--;
   }
   return res;
@@ -169,7 +132,7 @@ u16 Cuart::write(c08* buffer, u16 nBytes) {
   if (!nBytes || !buffer) {
     return 0;
   }
-  res = txFIFO.write((u08 *)buffer, nBytes);
+  res = txFifo.write((u08 *)buffer, nBytes);
   switch (uartNr) {
   case 0:
     // enable UDRE interrupt => we will start sending as soon as interrupt is handled
@@ -197,7 +160,7 @@ u16 Cuart::write(c08* buffer, u16 nBytes) {
 /****************************************************************************************/
 u16 Cuart::write(Tfifo<u08>* dat) {
   u16 res;
-  res = txFIFO.write(dat);
+  res = txFifo.write(dat);
   switch (uartNr) {
   case 0:
     // enable UDRE interrupt => we will start sending as soon as interrupt is handled
@@ -224,11 +187,11 @@ u16 Cuart::write(Tfifo<u08>* dat) {
 }
 /****************************************************************************************/
 u16 Cuart::space(void) {
-	return txFIFO.space();
+	return txFifo.space();
 }
 /****************************************************************************************/
 u16 Cuart::rxnum(void) {
-  return rxFIFO.used();
+  return rxFifo.used();
 }
 
 /****************************************************************************************/
@@ -330,7 +293,7 @@ void SIG_UART_DATA(void) {
 	if (pUart[0]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[0]->txFIFO.read(&dat, 1);
+	cnt = pUart[0]->txFifo.read(&dat, 1);
 	if (cnt) {
 		UDR0 = dat;
 	} else {
@@ -352,7 +315,7 @@ void SIG_UART_RECV(void) {
 	u08 data;
 	/* read the received data */
 	data = UDR0;
-	pUart[0]->rxFIFO.write(&data, 1);
+	pUart[0]->rxFifo.write(&data, 1);
 }
 //===============================================================================
 // UART Transmit register empty
@@ -363,7 +326,7 @@ void SIG_USART0_DATA(void) {
 	if (pUart[0]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[0]->txFIFO.read(&dat, 1);
+	cnt = pUart[0]->txFifo.read(&dat, 1);
 	if (cnt) {
 		UDR0 = dat;
 	} else {
@@ -385,7 +348,7 @@ void SIG_USART0_RECV(void) {
 	u08 data;
 	/* read the received data */
 	data = UDR0;
-	pUart[0]->rxFIFO.write(&data, 1);
+	pUart[0]->rxFifo.write(&data, 1);
 }
 
 //===============================================================================
@@ -398,7 +361,7 @@ void SIG_USART1_DATA(void) {
 	if (pUart[1]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[1]->txFIFO.read(&dat, 1);
+	cnt = pUart[1]->txFifo.read(&dat, 1);
 	if (cnt) {
 		UDR1 = dat;
 	} else {
@@ -420,7 +383,7 @@ void SIG_USART1_RECV(void) {
 	u08 data;
 	/* read the received data */
 	data = UDR1;
-	pUart[1]->rxFIFO.write(&data, 1);
+	pUart[1]->rxFifo.write(&data, 1);
 }
 #endif
 #ifdef UDR2
@@ -433,7 +396,7 @@ void SIG_USART2_DATA(void) {
 	if (pUart[2]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[2]->txFIFO.read(&dat, 1);
+	cnt = pUart[2]->txFifo.read(&dat, 1);
 	if (cnt) {
 		UDR2 = dat;
 	} else {
@@ -455,7 +418,7 @@ void SIG_USART2_RECV(void) {
 	u08 data;
 	/* read the received data */
 	data = UDR2;
-	pUart[2]->rxFIFO.write(&data, 1);
+	pUart[2]->rxFifo.write(&data, 1);
 }
 #endif
 
@@ -469,7 +432,7 @@ void SIG_USART3_DATA(void) {
 	if (pUart[3]->enable485 == true) {
 		BIT_SET_HI(RS485_EN_PORT, RS485_EN_PIN);
 	}
-	cnt = pUart[3]->txFIFO.read(&dat, 1);
+	cnt = pUart[3]->txFifo.read(&dat, 1);
 	if (cnt) {
 		UDR3 = dat;
 	} else {
@@ -492,6 +455,6 @@ void SIG_USART3_RECV(void) {
   u08 data;
   /* read the received data */
   data = UDR3;
-  pUart[3]->rxFIFO.write(&data, 1);
+  pUart[3]->rxFifo.write(&data, 1);
 }
 #endif

@@ -15,7 +15,8 @@
 #define DDR_ADR     (this->pinAdr+1)
 #define PORT_ADR    (this->pinAdr+2)
 /****************************************************************************************/
-Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup, bool _activeLow) {
+Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup,
+           bool _activeLow) {
   this->pinAdr = _portBaseAdr;
   this->pin = _pinNumber;
   this->isActiveLow = _activeLow;
@@ -34,18 +35,12 @@ Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup, bool _a
   }
 }
 /****************************************************************************************/
-
-Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinState _state, bool _activeLow) {
+Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, tInput _state, bool _isActiveLow) {
   this->pinAdr = _portBaseAdr;
   this->pin = _pinNumber;
-  this->isActiveLow = _activeLow;
-
-
-
-
+  this->isActiveLow = _isActiveLow;
   // Set the pin as an output by setting the bit in the direction register.
   (*(volatile u08*) (DDR_ADR)) |= (1 << _pinNumber);
-
   // If the pullup needs to be on configure it.
   if (_state == ePinHigh) {
     setHigh();
@@ -54,8 +49,7 @@ Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinState _state, bool _activeLow) 
   }
 }
 /****************************************************************************************/
-Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, bool _pullup,
-           bool _activeLow) {
+Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, tOutput _pullup, bool _activeLow) {
   this->pinAdr = _portBaseAdr;
   this->pin = _pinNumber;
   this->isActiveLow = _activeLow;
@@ -80,7 +74,7 @@ void Cpin::setDir(ePinDir _dir) {
   }
 }
 //****************************************************************************************
-void  Cpin::pullup(bool _pullup) {
+void Cpin::pullup(bool _pullup) {
   // If the pullup needs to be on configure it.
   if (_pullup) {
     (*(volatile u08*) (PORT_ADR)) |= (1 << pin);
@@ -90,19 +84,19 @@ void  Cpin::pullup(bool _pullup) {
 }
 //****************************************************************************************
 bool Cpin::isHigh(void) {
-    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x1);
+  return ((((*(volatile u08*) (PIN_ADR)) >> pin)& 0x1)==0x1);
 }
 //****************************************************************************************
 bool Cpin::isLow(void) {
-    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x0);
+  return ((((*(volatile u08*) (PIN_ADR)) >> pin)& 0x1)==0x0);
 }
 //****************************************************************************************
 void Cpin::setHigh(void) {
-    *(volatile u08*) (PORT_ADR) |= (0x1 << pin);
+  *(volatile u08*) (PORT_ADR) |= (0x1 << pin);
 }
 //****************************************************************************************
 void Cpin::setLow(void) {
-    *(volatile u08*) (PORT_ADR) &= ~(0x1 << pin);
+  *(volatile u08*) (PORT_ADR) &= ~(0x1 << pin);
 }
 //****************************************************************************************
 void Cpin::setPolarity(bool _isActiveLow) {
@@ -111,17 +105,17 @@ void Cpin::setPolarity(bool _isActiveLow) {
 //****************************************************************************************
 bool Cpin::isEnabled(void) {
   if (isActiveLow) {
-    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x0);
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin)& 0x1)==0x0);
   } else {
-    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x1);
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin)& 0x1)==0x1);
   }
 }
 //****************************************************************************************
 bool Cpin::isDisabled(void) {
   if (isActiveLow) {
-    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x1);
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin)& 0x1)==0x1);
   } else {
-    return ((((*(volatile u08*) (PIN_ADR)) >> pin) & 0x1) == 0x0);
+    return ((((*(volatile u08*) (PIN_ADR)) >> pin)& 0x1)==0x0);
   }
 }
 //****************************************************************************************

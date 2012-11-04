@@ -6,6 +6,8 @@
 
 namespace LCDKEYPAD {
 
+  static const u08 maxLineLen = 20;
+
   typedef enum {
     CLEAR_LCD = 0x01,
     SET_LCD_STRING = 0x02,
@@ -36,7 +38,7 @@ namespace LCDKEYPAD {
       u08 StrLen;
       u08 xPos;
       u08 yPos;
-      u08 Str[80];
+      u08 Str[maxLineLen];
   } sKeypadDisplayTextCmd;
   /****************************************************************************************/
   typedef struct {

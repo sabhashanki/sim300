@@ -43,7 +43,7 @@ namespace NS_CSERVER {
   /****************************************************************************************/
   class Cserver {
     private:
-      static const u16 MAX_PACKET_LEN = 128;
+      static const u16 MAX_PACKET_LEN = 64;
       Cserial* serial;
       u08 cntByte;
       u32 timeLimit;

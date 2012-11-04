@@ -26,15 +26,26 @@ typedef enum {
   ePinIn = 0, ePinOut = 1
 } ePinDir;
 //****************************************************************************************
+typedef struct {
+    ePinState _state;
+} sOutput;
+//****************************************************************************************
+typedef struct {
+    bool pullup;
+} sInput;
+//****************************************************************************************
+typedef ePinState tInput;
+typedef bool tOutput;
+//****************************************************************************************
 class Cpin {
     bool isActiveLow;
     u08 pin;
     u16 pinAdr;
   public:
-    Cpin(u16 portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup = false, bool _isActiveLow = false);
-    Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinState _state, bool _activeLow = false);
-    Cpin(u16 _portBaseAdr, u08 _pinNumber, bool _pullup = false, bool _isActiveLow = false);
-    bool isEnabled(void);
+    Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup, bool _activeLow);
+    Cpin(u16 portBaseAdr, u08 _pinNumber, tInput _state, bool _isActiveLow = false);
+    Cpin(u16 portBaseAdr, u08 _pinNumber, tOutput _pullup = false, bool _isActiveLow = false);
+        bool isEnabled(void);
     bool isDisabled(void);
     void enable(void);
     void disable(void);

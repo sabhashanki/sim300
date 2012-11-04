@@ -30,6 +30,7 @@ namespace CSOCKET {
 /****************************************************************************************/
 class Csocket: public Cserial {
     static const f32 period = 1.0;
+    static const u08 defBufSize = 64;
     u08 socketNr;
     u16 port;
     bool print;
@@ -39,7 +40,7 @@ class Csocket: public Cserial {
     bool autoclose;
     Cmodem* modem;
   public:
-    Csocket(Cmodem* modem, u16 bufSize = 128, bool _autoclose = true);
+    Csocket(Cmodem* modem, u16 bufSize = defBufSize, bool _autoclose = true);
     void service(void);
     u16 write(u08* buffer, u16 nBytes);
     u16 read(u08* buffer, u16 nBytes);

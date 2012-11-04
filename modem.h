@@ -100,6 +100,7 @@ typedef struct {
 class Cmodem : public Csignal {
   private:
     static const f32 period = 100e-3;
+    static const u08 defBufSize = 64;
     eMdmState mdmState;
     eCmdState cmdState;
     eMdmState failState;
@@ -148,7 +149,7 @@ class Cmodem : public Csignal {
     u08 smstx_en;
     u08 gprsraw[MDM_MAX_RX_CMD_LEN];
     u08 gprsrx;
-    Cmodem(Cuart * _pUart);
+    Cmodem(Cuart * _pUart, u08 bufSize = defBufSize);
     bool initModem(void);
     bool initIP(bool useDns);
     bool connect(void);

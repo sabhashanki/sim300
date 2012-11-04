@@ -10,8 +10,8 @@ Cuart modemUart(2, 115200);
 Cmodem modem(&modemUart);
 Csocket socket(&modem);
 Cserver server(&socket);
-Cuart keypadUart(1);
-Cnetwork network(&keypadUart, 1);
+Cuart keypadUart(3, 9600, 0x60, true);
+Cnetwork network(&keypadUart, 0xFA, 0x60);
 Ctransport transport(&network);
 Cdisplay display(&transport);
 Ckeypad keypad(&transport);
@@ -27,14 +27,36 @@ Cpin pinGDO2(adrPortB, 7, ePinIn, true);
 Csl018 tag(&i2c, &tagpin, 0xA0);
 Cspi spi(&pinMOSI, &pinSCK, &pinMISO, &pinSS, &rfCS, SPI_MODE_0, SPI_SPEED_FOSC_64);
 CC1101 rf(&spi, &pinGDO0, &pinGDO2, radioPktLen);
-
 /****************************************************************************************/
 void hello() {
   debugUart.sendStr_P(PSTR("\n\r  ===== Manhole Lock System ====="));
-  display.writeClear();
-  display.writeStringP(PSTR("Initializing..."));
+  while (1) {
+    display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
+    display.writeStringP(PSTR("Initializing..."), 0, 1, false);
+  }
 }
+/****************************************************************************************/
+void testRf() {
+  u08 radio[32];
+  u08 cmd;
 
+  if (debugUart.rxFifo.read(&cmd, 1) == 1) {
+    if (cmd == 'o') {
+      debugUart.sendStr_P(PSTR("\n\rOPEN THE LOCK"));
+      radio[0] = 0xCC;
+      radio[1] = 5;
+      rf.transmit(radio, 2);
+      _delay_ms(500);
+    }
+    if (cmd == 'c') {
+      debugUart.sendStr_P(PSTR("\n\rCLOSE THE LOCK"));
+      radio[0] = 0xDD;
+      radio[1] = 5;
+      rf.transmit(radio, 2);
+      _delay_ms(500);
+    }
+  }
+}
 /****************************************************************************************/
 int main(void) {
   init();
@@ -67,7 +89,6 @@ int main(void) {
   }
   return 0;
 }
-
 /****************************************************************************************
  C++ work around
  ****************************************************************************************/

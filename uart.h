@@ -51,15 +51,14 @@ class Cuart {
     u08 txCnt;
     u16 lastTxTime;
   public:
-    Tfifo<u08> rxFIFO;
-    Tfifo<u08> txFIFO;
+    Tfifo<u08> rxFifo;
+    Tfifo<u08> txFifo;
     //volatile u32 time;
     u08 txBusy;
     u08 enable485;
     u08 healthy;
     u32 baudRate;
-    Cuart(u08 uartNr, u32 baudRate = 9600, u16 bufSize = 128);
-    Cuart(u08 uartNr, u32 baudRate, u16 bufSize, u08 enable485);
+    Cuart(u08 uartNr, u32 baudRate = 9600, u16 bufSize = 64, bool enable485 = false);
     u16 write(c08* buffer, u16 nBytes);
     u16 write(Tfifo<u08>* dat);
 #ifndef UART_MINIMAL
@@ -73,8 +72,8 @@ class Cuart {
     u16 rxnum(void);
     void clearRx(void);
     void clear(void) {
-      txFIFO.clear();
-      rxFIFO.clear();
+      txFifo.clear();
+      rxFifo.clear();
     }
     void setBaudRate(u32 baudrate);
     void setFrame(void);
