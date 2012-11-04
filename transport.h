@@ -33,9 +33,9 @@ typedef struct {
 class Ctransport: public Csignal {
   private:
     static const f32 period = 750e-3;
-    static const u08 maxReTx = 10;
+    static const u08 maxReTx = 3;
     static const u08 maxTransactions = 16;
-    static const u08 maxWait = 4;
+    static const u08 maxWait = 1;
     Cnetwork* network;
     sTxList txList[maxTransactions];
     u08 txIndex;

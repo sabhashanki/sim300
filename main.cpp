@@ -27,14 +27,7 @@ Cpin pinGDO2(adrPortB, 7, ePinIn, true);
 Csl018 tag(&i2c, &tagpin, 0xA0);
 Cspi spi(&pinMOSI, &pinSCK, &pinMISO, &pinSS, &rfCS, SPI_MODE_0, SPI_SPEED_FOSC_64);
 CC1101 rf(&spi, &pinGDO0, &pinGDO2, radioPktLen);
-/****************************************************************************************/
-void hello() {
-  debugUart.sendStr_P(PSTR("\n\r  ===== Manhole Lock System ====="));
-  while (1) {
-    display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
-    display.writeStringP(PSTR("Initializing..."), 0, 1, false);
-  }
-}
+u08 radio[32];
 /****************************************************************************************/
 void testRf() {
   u08 radio[32];
@@ -63,15 +56,47 @@ int main(void) {
   modem.ServerSetIP((c08*) "41.181.16.116", (c08*) "61000", false);
   scheduler.start();
   sei();
-  hello();
-  display.writeString(PSTR("Init Modem..."));
+  debugUart.sendStr_P(PSTR("\n\r  ===== Manhole Lock System ====="));
+  display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
+  display.writeStringP(PSTR("Initializing..."), 0, 1, false);
+  display.writeStringP(PSTR("Busy with GSM Modem"), 0, 2, false);
+  _delay_ms(500);
 //  if (!modem.initModem())
 //    goto error;
-  display.writeString(PSTR("Init Server..."));
+  display.writeStringP(PSTR("Done with GSM Modem"), 0, 2, false);
+  display.writeStringP(PSTR("Contacting server"), 0, 3, false);
+  _delay_ms(500);
 //  if (!modem.initIP(false))
 //    goto error;
-  display.writeStringP(PSTR("Ready: Attach"));
-  display.writeStringP(PSTR("to lid..."), 0, 1, false);
+  display.writeStringP(PSTR("Connected to Server"), 0, 3, false);
+
+  _delay_ms(500);
+  display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
+  display.writeStringP(PSTR("Ready"), 0, 1, false);
+  display.writeStringP(PSTR("Place unit on lid"), 0, 2, false);
+  display.writeStringP(PSTR("..."), 0, 3, false);
+
+  tag.reset();
+  while (!tag.present()) {
+    _delay_ms(10);
+  }
+  if (tag.read()) {
+    display.writeStringP(PSTR("Lid found !!!"), 0, 3, false);
+    _delay_ms(500);
+  }
+
+  display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
+  display.writeStringP(PSTR("Ready"), 0, 1, false);
+  display.writeStringP(PSTR("Reading ID"), 0, 2, false);
+  display.writeStringP(PSTR("..."), 0, 3, false);
+  rf.rxFifo.clear();
+  rf.packetAvailable = false;
+  while (!rf.packetAvailable) {
+    rf.rxISR();
+    _delay_ms(200);
+  }
+  rf.rxFifo.read(radio, radioPktLen);
+  display.writeStringP(PSTR("ID read OK !!!  "), 0, 3, false);
 
   while (1) {
     if (tag.present()) {

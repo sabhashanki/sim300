@@ -22,17 +22,18 @@ Ctransport::Ctransport(Cnetwork* _network) :
 }
 
 bool Ctransport::read(u08* rxDat, u08* txDat, u08 byteCnt, u08 dstNode) {
-  start(maxWait);
-  network->tx(txNum, dstNode, txDat, byteCnt);
-  while (!network->packetAvailable()) {
-    network->service();
-    if (isSet()) {
-      return false;
+  for (u08 cnt = 0; cnt < maxReTx; cnt++) {
+    start(maxWait);
+    network->tx(txNum, dstNode, txDat, byteCnt);
+    while (!network->packetAvailable() && !isSet()) {
+      network->service();
+    }
+    if (network->packetAvailable()) {
+      memcpy(rxDat, network->payload, network->Header.Size);
+      return true;
     }
   }
-  memcpy(rxDat, network->payload, network->Header.Size);
-  network->reset();
-  return true;
+  return false;
 }
 
 void Ctransport::service(void) {

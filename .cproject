@@ -64,12 +64,6 @@
 							<tool id="de.innot.avreclipse.tool.avrdude.app.debug.1271245756" name="AVRDude" superClass="de.innot.avreclipse.tool.avrdude.app.debug"/>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="de.innot.avreclipse.configuration.app.debug.1969527986.1164424471" name="network.cpp" rcbsApplicability="disable" resourcePath="network.cpp" toolsToInvoke="de.innot.avreclipse.tool.cppcompiler.app.debug.1185184623.1484514962">
-						<tool id="de.innot.avreclipse.tool.cppcompiler.app.debug.1185184623.1484514962" name="AVR C++ Compiler" superClass="de.innot.avreclipse.tool.cppcompiler.app.debug.1185184623">
-							<option id="de.innot.avreclipse.cppcompiler.option.optimize.2123497829" superClass="de.innot.avreclipse.cppcompiler.option.optimize" value="de.innot.avreclipse.cppcompiler.optimize.size" valueType="enumerated"/>
-							<inputType id="de.innot.avreclipse.cppcompiler.input.1584874175" superClass="de.innot.avreclipse.cppcompiler.input"/>
-						</tool>
-					</fileInfo>
 					<sourceEntries>
 						<entry excluding="src/CI2c.cpp|src/PcCodegenerator.cpp|src/CTimer.cpp|src/codegenerator.cpp|src/CNetwork.cpp|src/operatorCoder.cpp|src/codeDispenser.cpp|src/CRtc.cpp|cmn/CI2c.cpp|src/CRfid.cpp|src/CServer.cpp|cmn/CTimer.cpp|src/Controller.cpp|src/smshandler.cpp|src/datahandler.cpp|cmn/pc2dongle.h|cmn/operatorCoder.h|cmn/operatorCoder.cpp|cmn/RadioMaster2Lock.h|cmn/RadioMaster2Keypad.h|cmn/PcCodegenerator.h|cmn/PcCodegenerator.cpp|cmn/nodeid.h|cmn/Master2Radio.h|cmn/Irtc.h|cmn/Iradio.h|cmn/IKeypad.h|cmn/IIOModule.h|cmn/encoder.h|cmn/encoder.cpp|cmn/codegenerator.h|cmn/codegenerator.cpp|cmn/codeDispenser.h|cmn/codeDispenser.cpp|cmn/CNetwork.h|cmn/CNetwork.cpp|inc/uart4.h|inc/timer1280.h|inc/testmodule.h|inc/strtoul_new.h|inc/spi.h|inc/smshandler.h|inc/sms.h|inc/rprintf.h|inc/rfiddevice.h|inc/printf.h|inc/param.h|inc/mdm_transport.h|inc/locator.h|inc/extint.h|inc/drv_rfidpacket.h|inc/drv_rfid.h|inc/drv_modem.h|inc/drv_gprs.h|inc/drv_dataflash.h|inc/debug.h|inc/buffer.h|inc/a2d.h|src/rfiddevice.c|src/testmodule.c|src/taglocator.c|src/tag.c|src/stxetx.c|src/strtoul_new.c|src/spi.c|src/smshandler.c|src/scheduler.c|src/mdm_transport.c|src/locator.c|src/drv_util.c|src/drv_rfidpacket.c|src/drv_modem.c|src/main.c|src/main_test.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>

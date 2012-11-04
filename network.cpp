@@ -83,7 +83,7 @@ void Cnetwork::tx(u08 transactNum, u08 dstNode, u08* Dat, u08 byteCnt) {
   Header.SrcNode = NodeId;
   Header.TransactNum = transactNum;
   Header.CRC = crc8(Dat, byteCnt);
-  State = STATE_RX_HEADER;
+  reset();
   uart->write((c08*) &Header, sizeof(Header));
   uart->write((c08*) Dat, byteCnt);
 }

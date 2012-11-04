@@ -38,7 +38,7 @@ namespace CNETWORK {
     private:
       static const u08 BROADCAST_NODE_ID = 0;
       static const u08 UNCONF_NODE_ID = 0;
-      static const f32 timeoutTime = 4;
+      static const f32 timeoutTime = 1;
       static const f32 period = 100e-3;
       Csignal timeout;
       Cuart* uart;
@@ -51,6 +51,7 @@ namespace CNETWORK {
       void tx(u08 transactNum, u08 dstNode, u08* dat, u08 byteCnt);
       void reset(void) {
         uart->clearRx();
+        timeout.start(timeoutTime);
         State = STATE_RX_HEADER;
       }
       u08 packetAvailable(void) {
