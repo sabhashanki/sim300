@@ -52,11 +52,11 @@ void Csocket::service(void) {
         }
         if ((len = modem->rxFifo.used()) > 0) {
           modem->rxFifo.read(&rxFIFO);
-          modem->disconnect();
+          //modem->disconnect();
           idleTime = 0;
         }
         if (timeout.isSet()) {
-          modem->disconnect();
+         // modem->disconnect();
         }
         break;
       case SOCK_CLOSE_WAIT:
@@ -64,8 +64,8 @@ void Csocket::service(void) {
         break;
       case SOCK_CLOSED: // CLOSED
         if (!txFIFO.empty()) {
-          modem->disconnect();
-          modem->connect();
+          //modem->disconnect();
+          //modem->connect();
           timeout.start(4);
         }
         break;
