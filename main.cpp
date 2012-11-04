@@ -65,13 +65,13 @@ int main(void) {
     goto retry;
   display.writeStringP(PSTR("Done    "), 0, 3, false);
 
-  status = COVER_OPEN;
-  while (1) {
-    server.sendCoverStatus(status);
-    if (status == COVER_OPEN) status=COVER_CLOSED;
-    else status = COVER_OPEN;
-    _delay_ms(2000);
-  }
+//  status = COVER_OPEN;
+//  while (1) {
+//    server.sendCoverStatus(status);
+//    if (status == COVER_OPEN) status=COVER_CLOSED;
+//    else status = COVER_OPEN;
+//    _delay_ms(2000);
+//  }
   while (1) {
     _delay_ms(500);
     display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
