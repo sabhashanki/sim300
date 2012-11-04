@@ -39,6 +39,7 @@ class Csocket: public Cserial {
     u08* buf;
     bool autoclose;
     Cmodem* modem;
+    Csignal timeout;
   public:
     Csocket(Cmodem* modem, u16 bufSize = defBufSize, bool _autoclose = true);
     void service(void);

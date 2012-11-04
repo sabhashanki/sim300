@@ -36,11 +36,13 @@ Csocket::Csocket(Cmodem* _modem, u16 _bufSize, bool _autoclose) {
   signal.setPeriod(period);
   scheduler.attach(&signal);
   autoclose = _autoclose;
+  scheduler.attach(&timeout);
 }
 /****************************************************************************************/
 void Csocket::service(void) {
   u32 len;
   if (signal.isSet()) {
+    modem->service();
     switch (modem->ss) {
       case SOCK_ESTABLISHED:
         if (txFIFO.used() > 0) {
@@ -53,13 +55,8 @@ void Csocket::service(void) {
           modem->disconnect();
           idleTime = 0;
         }
-        if (autoclose) {
-          if (idleTime > LIFETIME) {
-            modem->disconnect();
-          }
-        }
-        if (signal.isSet()) {
-          idleTime++;
+        if (timeout.isSet()) {
+          modem->disconnect();
         }
         break;
       case SOCK_CLOSE_WAIT:
@@ -67,8 +64,8 @@ void Csocket::service(void) {
         break;
       case SOCK_CLOSED: // CLOSED
         if (!txFIFO.empty()) {
-          idleTime = 0;
           modem->connect();
+          timeout.start(4);
         }
         break;
       case SOCK_INIT: // The SOCKET opened with TCP mode

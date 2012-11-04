@@ -78,7 +78,7 @@ class Cscheduler {
     void start(void);
     static const u08 periodCnt = (255);
     static const u08 divisor = COUNTER_CLK_DIV1024;
-    static const u08 maxSignals = 8;
+    static const u08 maxSignals = 16;
 };
 /****************************************************************************************/
 using namespace SCHEDULER;

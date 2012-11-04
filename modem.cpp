@@ -147,7 +147,6 @@ bool Cmodem::checkRegistration() {
   }
   return false;
 }
-
 /*******************************************************************************/
 bool Cmodem::initModem(void) {
   u08 rc = 0;
@@ -244,9 +243,9 @@ bool Cmodem::connect(void) {
 bool Cmodem::disconnect(void) {
   c08 txcmd[MDM_MAX_TX_CMD_LEN];
   strcpy(txcmd, "AT+CIPCLOSE\r");
+  ss = SOCK_CLOSED;
   if (!HandleAtCmd(txcmd, AT_IP_CLOSE))
     return false;
-  ss = SOCK_CLOSED;
   return true;
 }
 

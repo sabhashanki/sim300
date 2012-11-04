@@ -3,6 +3,7 @@
 /****************************************************************************************/
 #include "types.h"
 #include "serial.h"
+#include "scheduler.h"
 /****************************************************************************************/
 namespace NS_CSERVER {
   typedef enum {
@@ -41,14 +42,16 @@ namespace NS_CSERVER {
     STATE_RX_LENGTH, STATE_RX_MSG_ID, STATE_RX_PAYLOAD, STATE_PACKET_AVAILABLE
   } eState;
   /****************************************************************************************/
-  class Cserver {
+  class Cserver: public Csignal {
     private:
       static const u16 MAX_PACKET_LEN = 64;
+      static const u16 period = 300e-3;
       Cserial* serial;
       u08 cntByte;
       u32 timeLimit;
       u16 baudRate;
       u08 payloadSize;
+      Csignal timeout;
     public:
       eState State;
       u08 NodeId;
@@ -57,7 +60,8 @@ namespace NS_CSERVER {
       sHeader Header;
       u08* payload;
       Cserver(Cserial* serial, u08 size = MAX_PACKET_LEN, u08 node = 0);
-      void statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus* status);
+      void sendCoverStatus(eCoverStatus status);
+      bool statusUpdate(u08* strID, u08* strGPS, u08* strRFID, eCoverStatus* status);
       void setPayloadBufSize(u08 size);
       void service(void);
       u08 packetAvailable(void);
