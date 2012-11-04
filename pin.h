@@ -19,6 +19,14 @@
 #define PORT_ADR    (this->pinAdr+2)
 //****************************************************************************************
 typedef enum {
+  ePinTotem = 0, ePinPullup = 1
+} ePinPull;
+//****************************************************************************************
+typedef enum {
+  ePinActiveHigh = 0, ePinActiveLow = 1
+} ePinPolarity;
+//****************************************************************************************
+typedef enum {
   ePinLow = 0, ePinHigh = 1
 } ePinState;
 //****************************************************************************************
@@ -38,14 +46,13 @@ typedef ePinState tInput;
 typedef bool tOutput;
 //****************************************************************************************
 class Cpin {
+  protected:
     bool isActiveLow;
     u08 pin;
     u16 pinAdr;
   public:
-    Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup, bool _activeLow);
-    Cpin(u16 portBaseAdr, u08 _pinNumber, tInput _state, bool _isActiveLow = false);
-    Cpin(u16 portBaseAdr, u08 _pinNumber, tOutput _pullup = false, bool _isActiveLow = false);
-        bool isEnabled(void);
+    Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _activeLow);
+    bool isEnabled(void);
     bool isDisabled(void);
     void enable(void);
     void disable(void);
@@ -56,7 +63,19 @@ class Cpin {
     void setPolarity(bool _isActiveLow);
     void toggle(void);
     void setDir(ePinDir _dir);
+};
+//****************************************************************************************
+class Cinput: public Cpin {
+  public:
+    Cinput(u16 _portBaseAdr, u08 _pinNumber, ePinPolarity _polarity,
+           ePinPull _pullup);
     void pullup(bool _pullup);
+};
+//****************************************************************************************
+class Coutput: public Cpin {
+  public:
+    Coutput(u16 _portBaseAdr, u08 _pinNumber, ePinPolarity _polarity,
+            ePinState _state);
 };
 //****************************************************************************************
 #endif

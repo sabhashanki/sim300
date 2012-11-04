@@ -8,28 +8,23 @@ Csl018::Csl018(Ci2c *_i2c, Cpin *_stpin, u08 _addr) {
   i2c = _i2c;
   address = _addr;
   stpin = _stpin;
+  scheduler.attach(&timeout);
 }
-
 /*****************************************************************************************/
 bool Csl018::reset(void) {
   sl018.uSL018.wr.cmd = CMD_RESET;
   sl018.uSL018.wr.len = 1;
   i2c->masterSend(address, sl018.uSL018.wr.len, sl018.uSL018.data);
-  clearTime();
-  while (getTime() < 200000) {
-  };
+  timeout.wait(500e-3);
   return true;
 }
-
 /*****************************************************************************************/
 bool Csl018::read(void) {
   u08 size;
   sl018.uSL018.wr.cmd = CMD_SELECT;
   sl018.uSL018.wr.len = 2;
   i2c->masterSend(address, sl018.uSL018.wr.len, sl018.uSL018.data);
-  clearTime();
-  while (getTime() < 5000)
-    ; //5ms
+  timeout.wait(5e-3);
   sl018.uSL018.rd.len = 11;
   i2c->masterReceive(address, sl018.uSL018.rd.len, sl018.uSL018.data);
   errorCode = sl018.uSL018.rd.sts;
@@ -43,7 +38,6 @@ bool Csl018::read(void) {
   }
   return false;
 }
-
 /*****************************************************************************************/
 c08* Csl018::getErrorMessage(void) {
   switch (errorCode) {
@@ -87,10 +81,8 @@ bool Csl018::login(u08 sector) {
   sl018.uSL018.wr.data[2] = 0xAA;
   memset(&sl018.uSL018.wr.data[3], 0xFF, 6);
   i2c->masterSend(address, sl018.uSL018.wr.len, sl018.uSL018.data);
-  clearTime();
   sl018.uSL018.rd.len = 3;
-  while (getTime() < 10000)
-    ; //10ms
+  timeout.wait(10e-3);
   i2c->masterReceive(address, sl018.uSL018.rd.len, sl018.uSL018.rd.data);
   errorCode = sl018.uSL018.rd.sts;
   if (errorCode == LOGIN_OK && sl018.uSL018.rd.cmd == CMD_LOGIN
@@ -114,9 +106,7 @@ bool Csl018::login(u08 sector, u08 keyType, u08 key[6]) {
   sl018.uSL018.wr.data[2] = 0xAA;
   memcpy(&sl018.uSL018.wr.data[3], key, 6);
   i2c->masterSend(address, sl018.uSL018.wr.len, sl018.uSL018.data);
-  clearTime();
-  while (getTime() < 10000)
-    ; //10ms
+  timeout.wait(10e-3);
   sl018.uSL018.rd.len = 3;
   i2c->masterReceive(address, sl018.uSL018.rd.len, sl018.uSL018.rd.data);
   errorCode = sl018.uSL018.rd.sts;
@@ -253,24 +243,6 @@ c08* Csl018::tagName(u08 type) {
     default:
       return "";
   }
-}
-
-/****************************************************************************************/
-void Csl018::clearTime(void) {
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  {
-    timer = 0;
-  }
-}
-
-/****************************************************************************************/
-u32 Csl018::getTime(void) {
-  u32 t;
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  {
-    t = timer;
-  }
-  return t;
 }
 
 /****************************************************************************************/

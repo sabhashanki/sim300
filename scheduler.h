@@ -49,6 +49,13 @@ class Csignal {
       set = false;
       ticks = 0;
     }
+    void wait(f32 _seconds) {
+      period = _seconds / tickBase;
+      set = false;
+      ticks = 0;
+      while (!set) {
+      }
+    }
     bool isSet(void) {
       bool _s = set;
       set = false;

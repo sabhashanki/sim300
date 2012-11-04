@@ -15,8 +15,7 @@
 #define DDR_ADR     (this->pinAdr+1)
 #define PORT_ADR    (this->pinAdr+2)
 /****************************************************************************************/
-Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup,
-           bool _activeLow) {
+Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _activeLow) {
   this->pinAdr = _portBaseAdr;
   this->pin = _pinNumber;
   this->isActiveLow = _activeLow;
@@ -27,39 +26,26 @@ Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, ePinDir _dir, bool _pullup,
     // Set the pin as an output by setting the bit in the direction register.
     (*(volatile u08*) (DDR_ADR)) |= (1 << _pinNumber);
   }
+}
+/****************************************************************************************/
+Cinput::Cinput(u16 _portBaseAdr, u08 _pinNumber, ePinPolarity _polarity, ePinPull _pullup) :
+    Cpin(_portBaseAdr, _pinNumber, ePinIn, _polarity) {
   // If the pullup needs to be on configure it.
-  if (_pullup) {
-    (*(volatile u08*) (PORT_ADR)) |= (1 << _pinNumber);
+  if (_pullup == ePinPullup) {
+    (*(volatile u08*) (PORT_ADR)) |= (1 << pin);
   } else {
-    (*(volatile u08*) (PORT_ADR)) &= ~(1 << _pinNumber);
+    (*(volatile u08*) (PORT_ADR)) &= ~(1 << pin);
   }
 }
 /****************************************************************************************/
-Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, tInput _state, bool _isActiveLow) {
-  this->pinAdr = _portBaseAdr;
-  this->pin = _pinNumber;
-  this->isActiveLow = _isActiveLow;
-  // Set the pin as an output by setting the bit in the direction register.
-  (*(volatile u08*) (DDR_ADR)) |= (1 << _pinNumber);
-  // If the pullup needs to be on configure it.
+Coutput::Coutput(u16 _portBaseAdr, u08 _pinNumber,
+                 ePinPolarity _polarity, ePinState _state) :
+    Cpin(_portBaseAdr, _pinNumber, ePinOut, _polarity) {
+  // Set the initial state.
   if (_state == ePinHigh) {
     setHigh();
   } else {
     setLow();
-  }
-}
-/****************************************************************************************/
-Cpin::Cpin(u16 _portBaseAdr, u08 _pinNumber, tOutput _pullup, bool _activeLow) {
-  this->pinAdr = _portBaseAdr;
-  this->pin = _pinNumber;
-  this->isActiveLow = _activeLow;
-  // Set the pin as an input by clearing the bit in the direction register.
-  (*(volatile u08*) (DDR_ADR)) &= ~(1 << _pinNumber);
-  // If the pullup needs to be on configure it.
-  if (_pullup) {
-    (*(volatile u08*) (PORT_ADR)) |= (1 << _pinNumber);
-  } else {
-    (*(volatile u08*) (PORT_ADR)) &= ~(1 << _pinNumber);
   }
 }
 
@@ -74,7 +60,7 @@ void Cpin::setDir(ePinDir _dir) {
   }
 }
 //****************************************************************************************
-void Cpin::pullup(bool _pullup) {
+void Cinput::pullup(bool _pullup) {
   // If the pullup needs to be on configure it.
   if (_pullup) {
     (*(volatile u08*) (PORT_ADR)) |= (1 << pin);

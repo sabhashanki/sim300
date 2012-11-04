@@ -4,6 +4,7 @@
 #include"types.h"
 #include "i2c.h"
 #include "pin.h"
+#include "scheduler.h"
 
 using namespace I2C;
 
@@ -77,10 +78,9 @@ class Csl018 {
     u08 uidlen;
     u08 errorCode;
     sSL018 sl018;
-
-    u32 volatile timer;
     Ci2c *i2c;
     Cpin *stpin;
+    Csignal timeout;
   public:
     Csl018(Ci2c *_i2c, Cpin *_stpin, u08 _addr);
     bool read(void);

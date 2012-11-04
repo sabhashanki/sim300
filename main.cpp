@@ -2,7 +2,10 @@
 #include "main.h"
 /****************************************************************************************/
 static const u16 adrPortB = 0x23;
-static const u08 radioPktLen = 4;
+static const u08 radioPktLen = 8;
+static const u08 open = 0xCC;
+static const u08 close = 0xDD;
+static const u08 moveTime = 5;
 /****************************************************************************************/
 c08 msg[16];
 Cuart debugUart(0, 115200);
@@ -16,16 +19,18 @@ Ctransport transport(&network);
 Cdisplay display(&transport);
 Ckeypad keypad(&transport);
 Ci2c i2c;
-Cpin tagpin(adrPortB, 6, ePinIn, false, true);
-Cpin pinSS(adrPortB, 0, ePinOut, true);
-Cpin pinSCK(adrPortB, 1, ePinOut, true);
-Cpin pinMOSI(adrPortB, 2, ePinOut, true);
-Cpin pinMISO(adrPortB, 3, ePinIn, true);
-Cpin rfCS(adrPortB, 4, ePinOut, true);
-Cpin pinGDO0(adrPortB, 6, ePinIn, true);
-Cpin pinGDO2(adrPortB, 7, ePinIn, true);
+Cinput tagpin(adrPortB, 6, ePinActiveLow, ePinPullup);
 Csl018 tag(&i2c, &tagpin, 0xA0);
+
+Coutput pinSS(adrPortB, 0, ePinActiveHigh, ePinHigh);
+Coutput pinSCK(adrPortB, 1, ePinActiveHigh, ePinLow);
+Coutput pinMOSI(adrPortB, 2, ePinActiveHigh, ePinLow);
+Cinput pinMISO(adrPortB, 3, ePinActiveHigh, ePinPullup);
+Coutput rfCS(adrPortB, 4, ePinActiveLow, ePinHigh);
 Cspi spi(&pinMOSI, &pinSCK, &pinMISO, &pinSS, &rfCS, SPI_MODE_0, SPI_SPEED_FOSC_64);
+
+Cinput pinGDO0(adrPortB, 6, ePinActiveLow, ePinPullup);
+Cinput pinGDO2(adrPortB, 7, ePinActiveLow, ePinPullup);
 CC1101 rf(&spi, &pinGDO0, &pinGDO2, radioPktLen);
 u08 radio[32];
 /****************************************************************************************/
@@ -80,10 +85,11 @@ int main(void) {
   while (!tag.present()) {
     _delay_ms(10);
   }
-  if (tag.read()) {
-    display.writeStringP(PSTR("Lid found !!!"), 0, 3, false);
-    _delay_ms(500);
+  while (!tag.read()) {
+    _delay_ms(10);
   }
+  display.writeStringP(PSTR("Lid detected !!!"), 0, 3, false);
+  _delay_ms(500);
 
   display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
   display.writeStringP(PSTR("Ready"), 0, 1, false);
@@ -91,12 +97,30 @@ int main(void) {
   display.writeStringP(PSTR("..."), 0, 3, false);
   rf.rxFifo.clear();
   rf.packetAvailable = false;
+  rf.setRxMode();
+  _delay_ms(200);
   while (!rf.packetAvailable) {
     rf.rxISR();
     _delay_ms(200);
   }
   rf.rxFifo.read(radio, radioPktLen);
   display.writeStringP(PSTR("ID read OK !!!  "), 0, 3, false);
+
+  display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
+  display.writeStringP(PSTR("Ready"), 0, 1, false);
+  display.writeStringP(PSTR("PRESS OPEN"), 0, 2, false);
+
+
+
+
+
+  radio[1] = moveTime;
+  while (1) {
+    radio[0] = open;
+    rf.transmit(radio, radioPktLen);
+    radio[0] = close;
+    rf.transmit(radio, radioPktLen);
+  }
 
   while (1) {
     if (tag.present()) {
