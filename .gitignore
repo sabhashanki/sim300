@@ -8,6 +8,9 @@
 *.mk
 *.d
 makefile
+*.hex
+*.eep
+
 
 # Compiled Dynamic libraries
 *.so
