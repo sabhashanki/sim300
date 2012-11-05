@@ -99,15 +99,24 @@ typedef struct {
 //*****************************************************************************
 class Cmodem : public Csignal {
   private:
-    static const f32 period = 100e-3;
-    static const u08 defBufSize = 64;
+    bool GetAtResp(char* rspStr, c08* rxRsp = NULL);
+    void StartupTask(void);
+    void ConfigureTask(void);
+    bool HandleAtCmd(c08* cmd, const char* _expRsp, u16 del = 200);
+    bool checkSignalStrength();
+    bool checkSIM();
+    bool checkRegistration();
+    bool PowerOff(void);
+    bool PowerOn(void);
+    void clearTimer(void);
+    Csignal timeout;
     eMdmState mdmState;
     eCmdState cmdState;
     eMdmState failState;
     eMdmError error;
     volatile u32 atomicTime;
     volatile u32 serviceTime;
-    u32 timeout;
+    //u32 timeout;
     u16 txlen;
     u16 rxlen;
     u08 rxindex;
@@ -120,18 +129,10 @@ class Cmodem : public Csignal {
     u08 pwrState;
     u08 initState;
     c08 *pRx;
-
     u08 error_cnt;
-    bool GetAtResp(char* rspStr, c08* rxRsp = NULL);
-    void StartupTask(void);
-    void ConfigureTask(void);
-    bool HandleAtCmd(c08* cmd, const char* _expRsp, u16 del = 200);
-    bool checkSignalStrength();
-    bool checkSIM();
-    bool checkRegistration();
-    bool PowerOff(void);
-    bool PowerOn(void);
-    void clearTimer(void);
+    static const f32 period = 100e-3;
+    static const u08 defBufSize = 64;
+    static const u08 numRetries = 6;
   public:
     Tfifo<u08> rxFifo;
     eSocketState ss;

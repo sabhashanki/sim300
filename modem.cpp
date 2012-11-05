@@ -57,25 +57,54 @@ Cmodem::Cmodem(Cuart * _pUart, u08 bufSize) :
   ss = SOCK_CLOSED;
   rxFifo.setBufSize(bufSize);
   scheduler.attach(this);
+  scheduler.attach(&timeout);
 }
 /*******************************************************************************/
-bool Cmodem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
-  u16 cnt = 0;
-  c08 rxRsp[MDM_MAX_RX_CMD_LEN];
-  memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
-  pUart->clear();
-  debugUart.uprintf("\r\nCmd: %s", cmd);
-  pUart->sendStr(cmd);
-  while (cnt < 10) {
-    cnt++;
-    _delay_ms(del / 10);
-    pUart->rxFifo.read((u08*) rxRsp, 0, true);
-    if (strstr((const char*) rxRsp, (c08*) _expRsp))
-      break;
-  }
-  pUart->rxFifo.read((u08*) rxRsp);
-  if (strstr((const char*) rxRsp, (c08*) _expRsp)) {
-    return true;
+bool Cmodem::HandleAtCmd(c08* _cmd, const char* _expRsp, u16 del) {
+//  u16 cnt = 0;
+//  c08 rxRsp[MDM_MAX_RX_CMD_LEN];
+//  memset(rxRsp, 0, MDM_MAX_RX_CMD_LEN);
+//  pUart->clear();
+//  //debugUart.uprintf("\r\nCmd: %s", cmd);
+//  pUart->sendStr(cmd);
+//  while (cnt < 10) {
+//    cnt++;
+//    _delay_ms(del / 10);
+//    pUart->rxFifo.read((u08*) rxRsp, 0, true);
+//    if (strstr((const char*) rxRsp, (c08*) _expRsp))
+//      break;
+//  }
+//  pUart->rxFifo.read((u08*) rxRsp);
+//  if (strstr((const char*) rxRsp, (c08*) _expRsp)) {
+//    return true;
+//  }
+//  return false;
+
+  const u08 len = 64;
+  c08 rxRsp[len];
+  bool done;
+  u08 cnt;
+
+  for (cnt = 0; cnt < numRetries; cnt++) {
+    done = false;
+    memset(rxRsp, 0, len);
+    pUart->clear();
+    pUart->sendStr(_cmd);
+    timeout.start(1);
+    while (!timeout.isSet() && !done) {
+      _delay_ms(200);
+      pUart->rxFifo.read((u08*) rxRsp, 0, true);
+      if (strchr(rxRsp, '\r'))
+        done = true;
+    }
+    debugUart.uprintf("\r\nAT response pkt: %s", rxRsp);
+    if (done) {
+      if (strstr(rxRsp, _expRsp)) {
+        debugUart.uprintf("\r\nDONE : %s", _cmd);
+        return true;
+      }
+      _delay_ms(1000);
+    }
   }
   return false;
 }
@@ -83,25 +112,40 @@ bool Cmodem::HandleAtCmd(c08* cmd, const char* _expRsp, u16 del) {
 bool Cmodem::checkSignalStrength() {
   const u08 len = 64;
   c08 rxRsp[len];
-  c08 expRsp[len];
-  c08 cmd[len];
   c08* pStr;
   c08* str;
   u08 signalStrenght;
-  memset(rxRsp, 0, len);
-  pUart->clear();
-  strcpy(cmd, "AT+CSQ\r");
-  strcpy(expRsp, AT_OK);
-  pUart->sendStr(cmd);
-  _delay_ms(300);
-  pUart->rxFifo.read((u08*) rxRsp);
-  if (strstr(rxRsp, expRsp)) {
-    pStr = rxRsp;
-    str = strsep(&pStr, ":");
-    str = strsep(&pStr, ",");
-    signalStrenght = atoi(str);
-    if (signalStrenght < 30 && signalStrenght > 5) {
-      return true;
+  bool done;
+  u08 cnt;
+
+  for (cnt = 0; cnt < numRetries; cnt++) {
+    done = false;
+    memset(rxRsp, 0, len);
+    pUart->clear();
+    pUart->sendStr_P(PSTR("AT+CSQ\r"));
+    timeout.start(1);
+    while (!timeout.isSet() && !done) {
+      _delay_ms(200);
+      pUart->rxFifo.read((u08*) rxRsp, 0, true);
+      if (strchr(rxRsp, '\r'))
+        done = true;
+    }
+    debugUart.uprintf("\r\nSignal strength pkt: %s", rxRsp);
+    if (done) {
+      if (strstr_P(rxRsp, PSTR("+CSQ"))) {
+        pStr = rxRsp;
+        str = strsep(&pStr, ":");
+        str = strsep(&pStr, ",");
+        signalStrenght = atoi(str);
+        if (signalStrenght < 99 && signalStrenght > 5) {
+          debugUart.uprintf("\r\nSignal strength: %i", signalStrenght);
+          return true;
+        }
+        if (signalStrenght == 99) {
+          cnt = 0;
+          _delay_ms(1000);
+        }
+      }
     }
   }
   return false;
@@ -131,19 +175,30 @@ bool Cmodem::checkSIM() {
 /*******************************************************************************/
 bool Cmodem::checkRegistration() {
   const u08 len = 64;
-  c08 rsp[len];
-  c08 exp[len];
-  c08 cmd[len];
-  memset(rsp, 0, len);
-  pUart->clear();
-  strcpy(cmd, "AT+CREG?\r");
-  strcpy(exp, AT_OK);
-  pUart->sendStr(cmd);
-  _delay_ms(300);
-  pUart->rxFifo.read((u08*) rsp);
-  if (strstr(rsp, exp)) {
-    if (strstr(rsp, "+CREG: 0,1"))
-      return true;
+  c08 rxRsp[len];
+  bool done;
+  u08 cnt;
+
+  for (cnt = 0; cnt < numRetries; cnt++) {
+    done = false;
+    memset(rxRsp, 0, len);
+    pUart->clear();
+    pUart->sendStr_P(PSTR("AT+CREG?\r"));
+    timeout.start(1);
+    while (!timeout.isSet() && !done) {
+      _delay_ms(200);
+      pUart->rxFifo.read((u08*) rxRsp, 0, true);
+      if (strchr(rxRsp, '\r'))
+        done = true;
+    }
+    debugUart.uprintf("\r\nRegister pkt: %s", rxRsp);
+    if (done) {
+      if (strstr_P(rxRsp, PSTR("+CREG: 0,1"))) {
+        debugUart.uprintf("\r\nDONE : REGISTERED");
+        return true;
+      }
+      _delay_ms(1000);
+    }
   }
   return false;
 }
@@ -151,9 +206,10 @@ bool Cmodem::checkRegistration() {
 bool Cmodem::initModem(void) {
   u08 rc = 0;
 
-  if (rc > 4) {
+  retry: if (rc > 4) {
     return false;
   }
+  debugUart.sendStr_P(PSTR("\r\nSTART: GSM"));
   rc++;
   PowerOff();
   PowerOn();
@@ -168,19 +224,33 @@ bool Cmodem::initModem(void) {
     _delay_ms(5);
   }
   _delay_ms(5000);
-  retry: HandleAtCmd("ATE0\r", AT_NONE);
-  if (!HandleAtCmd("AT\r", AT_OK))
+  HandleAtCmd("ATE0\r", AT_NONE);
+  debugUart.sendStr_P(PSTR("\r\nRETRY: GSM"));
+  if (!HandleAtCmd("AT\r", AT_OK)) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: 'AT'"));
     goto retry;
-  if (!HandleAtCmd("AT+CIPHEAD=1\r", AT_OK))
+  }
+  if (!HandleAtCmd("AT+CIPHEAD=1\r", AT_OK)) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CIPHEAD=1'"));
     goto retry;
-  if (!HandleAtCmd("AT+CMGF=1\r", AT_OK))
+  }
+  if (!HandleAtCmd("AT+CMGF=1\r", AT_OK)) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CMGF=1'"));
     goto retry;
-  if (!checkSignalStrength())
+  }
+  if (!checkSignalStrength()) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: SIGNAL STRENGTH"));
     goto retry;
-  if (!checkSIM())
+  }
+  if (!checkSIM()) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: CHECK SIM"));
     goto retry;
-  if (!checkRegistration())
+  }
+  if (!checkRegistration()) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: REGISTRATION"));
     goto retry;
+  }
+  debugUart.sendStr_P(PSTR("\r\nDONE: GSM"));
   return true;
 }
 /*******************************************************************************/
@@ -192,36 +262,58 @@ bool Cmodem::initIP(bool useDns) {
   retry: if (rc > 4) {
     return false;
   }
+  debugUart.sendStr_P(PSTR("\r\nSTART: TCP"));
+
   rc++;
-  if (!HandleAtCmd("AT+CGATT=1\r", AT_OK, 2500))
+  if (!HandleAtCmd("AT+CGATT=1\r", AT_OK, 2500)) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CGATT=1'"));
     goto retry;
-  if (!HandleAtCmd("AT+CGDCONT=1,\"IP\",\"internet\"\r", AT_OK))
+  }
+  if (!HandleAtCmd("AT+CGDCONT=1,\"IP\",\"internet\"\r", AT_OK)) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CGDCONT=1'"));
     goto retry;
+  }
   strcpy_P(txcmd, PSTR("AT+CSTT=\"internet\",\"\",\"\"\r"));
-  HandleAtCmd(txcmd, AT_OK, 2500);
+  if (!HandleAtCmd(txcmd, AT_OK, 2500)) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CSTT'"));
+    goto retry;
+  }
   if (usedns) {
-    if (!HandleAtCmd("AT+CDNSORIP=1\r", AT_OK))
+    if (!HandleAtCmd("AT+CDNSORIP=1\r", AT_OK)) {
+      debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CDNSORIP'"));
       goto retry;
+    }
     strcpy_P(txcmd, "AT+CDNSCFG=\"");
     strcat(txcmd, DYNDNS_IP);
     strcat_P(txcmd, "\"\r");
-    if (!HandleAtCmd(txcmd, AT_OK))
+    if (!HandleAtCmd(txcmd, AT_OK)) {
+      debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CDNSCFG'"));
       goto retry;
+    }
   } else {
-    if (!HandleAtCmd("AT+CDNSORIP=0\r", AT_OK))
+    if (!HandleAtCmd("AT+CDNSORIP=0\r", AT_OK)) {
+      debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CDNSORIP'"));
       goto retry;
+    }
   }
   strcpy_P(txcmd, PSTR("AT+CIICR\r"));
-  if (!HandleAtCmd(txcmd, AT_OK, 2500))
+  if (!HandleAtCmd(txcmd, AT_OK, 2500)) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CIICR'"));
     goto retry;
+  }
   strcpy_P(txcmd, PSTR("AT+CIFSR\r"));
-  if (!HandleAtCmd(txcmd, AT_IP))
+  if (!HandleAtCmd(txcmd, AT_IP)) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CIFSR'"));
     goto retry;
+  }
   strcpy_P(txcmd, PSTR("AT+CLPORT=\"TCP\",\""));
   strcat(txcmd, port);
   strcat(txcmd, "\"\r");
-  if (!HandleAtCmd(txcmd, AT_OK))
+  if (!HandleAtCmd(txcmd, AT_OK)) {
+    debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CLPORT'"));
     goto retry;
+  }
+  debugUart.sendStr_P(PSTR("\r\nDONE: TCP"));
   return true;
 }
 
