@@ -83,13 +83,13 @@ int main(void) {
     display.writeStringP(PSTR("Place unit on cover"), 0, 2, false);
     display.writeStringP(PSTR("Waiting..."), 0, 3, false);
 
-    tag.reset();
+    //tag.reset();
     while (!tag.present()) {
       _delay_ms(10);
     }
-    while (!tag.read()) {
-      _delay_ms(10);
-    }
+//    while (!tag.read()) {
+//      _delay_ms(10);
+//    }
     display.writeStringP(PSTR("Done       "), 0, 3, false);
     _delay_ms(500);
 
@@ -196,7 +196,7 @@ int main(void) {
       display.writeStringP(PSTR("Remove the unit"), 0, 3, false);
     }
 
-    tag.reset();
+    //tag.reset();
     while (tag.present()) {
       _delay_ms(10);
     }
