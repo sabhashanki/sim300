@@ -60,7 +60,7 @@ bool Cmodem::HandleAtCmd(c08* _cmd, const char* _expRsp) {
     debugUart.uprintf("\r\nCmd : %s", _cmd);
 #endif
     pUart->sendStr(_cmd);
-    timeout.start(20);
+    timeout.start(90);
     while (!timeout.isSet() && !done) {
       _delay_ms(200);
       pUart->rxFifo.read((u08*) rxRsp, len, true);
