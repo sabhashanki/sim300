@@ -5,8 +5,23 @@ static const u16 adrPortB = 0x23;
 static const u08 radioPktLen = 8;
 static const u08 open = 0xCC;
 static const u08 close = 0xDD;
-static const u08 moveTime = 40;
+static const u08 moveTime = 45;
 /****************************************************************************************/
+#define MODEM
+/****************************************************************************************/
+typedef struct {
+    u08 cmd;
+    u08 onTime;
+} sRadioCommand;
+/****************************************************************************************/
+typedef struct {
+    u32 ID;
+    u08 status;
+    u08 cnt;
+} sRadioRsp;
+/****************************************************************************************/
+sRadioCommand cmd;
+sRadioRsp rsp;
 c08 msg[16];
 u16 openTime;
 Cuart debugUart(0, 115200);
@@ -54,19 +69,20 @@ int main(void) {
   display.writeStringP(PSTR("Initializing..."), 0, 1, false);
   display.writeStringP(PSTR("GSM Modem"), 0, 2, false);
   display.writeStringP(PSTR("Busy..."), 0, 3, false);
+#ifdef MODEM
   _delay_ms(500);
   if (!modem.initModem())
-    goto retry;
+  goto retry;
   display.writeStringP(PSTR("Done    "), 0, 3, false);
   _delay_ms(500);
   display.writeStringP(PSTR("Remote Server"), 0, 2, false);
   display.writeStringP(PSTR("Busy..."), 0, 3, false);
   if (!modem.initIP(false))
-    goto retry;
-  if(!modem.connect())
-    goto retry;
+  goto retry;
+  if (!modem.connect())
+  goto retry;
   display.writeStringP(PSTR("Done    "), 0, 3, false);
-
+#endif
 //  status = COVER_OPEN;
 //  while (1) {
 //    server.sendCoverStatus(status);
@@ -129,19 +145,17 @@ int main(void) {
       display.writeStringP(PSTR("Opening lock"), 0, 2, false);
       display.writeStringP(PSTR("..."), 0, 3, false);
 
-      radio[1] = moveTime;
-      radio[0] = open;
-      _delay_ms(300);
-      rf.transmit(radio, radioPktLen);
-      _delay_ms(300);
-      rf.transmit(radio, radioPktLen);
-      _delay_ms(300);
-      rf.transmit(radio, radioPktLen);
-      rf.setRxMode();
+      cmd.cmd = open;
+      cmd.onTime = moveTime;
+      for (u08 cnt = 0; cnt < 10; cnt++) {
+        rf.transmit(radio, radioPktLen);
+        _delay_ms(100);
+      }
       _delay_ms(6000);
+      rf.setRxMode();
       rf.rxFifo.clear();
       rf.packetAvailable = false;
-      timeout.start(moveTime);
+      timeout.start(moveTime - 6);
       while (!rf.packetAvailable) {
         rf.rxISR();
         _delay_ms(200);
@@ -155,17 +169,15 @@ int main(void) {
 
       radio[1] = moveTime;
       radio[0] = close;
-      _delay_ms(300);
-      rf.transmit(radio, radioPktLen);
-      _delay_ms(300);
-      rf.transmit(radio, radioPktLen);
-      _delay_ms(300);
-      rf.transmit(radio, radioPktLen);
+      for (u08 cnt = 0; cnt < 10; cnt++) {
+        rf.transmit(radio, radioPktLen);
+        _delay_ms(100);
+      }
       rf.setRxMode();
       _delay_ms(6000);
       rf.rxFifo.clear();
       rf.packetAvailable = false;
-      timeout.start(moveTime);
+      timeout.start(moveTime - 6);
       while (!rf.packetAvailable) {
         rf.rxISR();
         _delay_ms(200);
@@ -179,10 +191,11 @@ int main(void) {
     display.writeStringP(PSTR("Talking to Server"), 0, 2, false);
     display.writeStringP(PSTR("Busy..."), 0, 3, false);
 
+#ifdef MODEM
     server.sendCoverStatus(status);
     display.writeStringP(PSTR("Done"), 0, 3, false);
     _delay_ms(1000);
-
+#endif
     // Log to server
     if (key == 1) {
       display.writeStringP(PSTR("Manhole Lock System"), 0, 0);

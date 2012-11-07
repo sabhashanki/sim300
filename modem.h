@@ -11,8 +11,7 @@
 #define MDM_TIMEOUT_VAL  1000000 //1sec
 #define SERVICE_INTERVAL  200000//
 #define MDM_RETRIES_VAL 3
-#define MDM_MAX_TX_CMD_LEN  254
-#define MDM_MAX_RX_CMD_LEN  254
+#define DEBUG_PRINT
 
 //*****************************************************************************
 typedef enum {
@@ -102,7 +101,7 @@ class Cmodem : public Csignal {
     bool GetAtResp(char* rspStr, c08* rxRsp = NULL);
     void StartupTask(void);
     void ConfigureTask(void);
-    bool HandleAtCmd(c08* cmd, const char* _expRsp, u16 del = 200);
+    bool HandleAtCmd(c08* cmd, const char* _expRsp);
     bool checkSignalStrength();
     bool checkSIM();
     bool checkRegistration();
@@ -110,62 +109,26 @@ class Cmodem : public Csignal {
     bool PowerOn(void);
     void clearTimer(void);
     Csignal timeout;
-    eMdmState mdmState;
-    eCmdState cmdState;
-    eMdmState failState;
-    eMdmError error;
-    volatile u32 atomicTime;
-    volatile u32 serviceTime;
-    //u32 timeout;
-    u16 txlen;
-    u16 rxlen;
-    u08 rxindex;
-    u08 retry;
-    u08 taskRetry;
-    char socket[8];
-
-    c08 pincode[6];
-    u08 debugLevel;
-    u08 pwrState;
-    u08 initState;
-    c08 *pRx;
-    u08 error_cnt;
     static const f32 period = 100e-3;
-    static const u08 defBufSize = 64;
-    static const u08 numRetries = 6;
+    static const u08 bufSize = 64;
+    static const u08 numRetries = 2;
+
   public:
-    Tfifo<u08> rxFifo;
-    eSocketState ss;
-    Cuart *pUart;
-    u08 simcard_ok;
-    u08 signal_ok;
-    u08 connect_ok;
-    u08 registered_ok;
-    char serverIP[32];
-    bool usedns;
-    char port[8];
-    volatile u32 isr_timer;
-    sSMS sms;
-    u08 smsrx;
-    u08 smstx_en;
-    u08 gprsraw[MDM_MAX_RX_CMD_LEN];
-    u08 gprsrx;
-    Cmodem(Cuart * _pUart, u08 bufSize = defBufSize);
+    Cmodem(Cuart * _pUart, u08 bufSize = bufSize);
     bool initModem(void);
     bool initIP(bool useDns);
     bool connect(void);
     bool disconnect(void);
     void service(void);
-    bool SIMCheckReady(void);
-    void UpdateMdmStatus(void);
-    bool SIMSetPin(c08* pin);
-    void setNextState(eMdmState nextState);
-    eMdmState GetStateModem(void);
-    bool GetSignalQuality(void);
-    bool SendSMS(char *PhoneNumber, char *Message);
     bool write(u08* dat, u16 len);
     bool write(Tfifo<u08>* dat);
     void ServerSetIP(c08* _IP, c08 *_port, bool _usedns);
-    void GetUnSolicited(void);
+    Tfifo<u08> rxFifo;
+    eSocketState ss;
+    Cuart *pUart;
+    char serverIP[32];
+    bool usedns;
+    char port[8];
+    u08 gprsraw[bufSize];
 };
 #endif

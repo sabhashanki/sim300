@@ -60,7 +60,7 @@ void Csocket::service(void) {
         }
         break;
       case SOCK_CLOSE_WAIT:
-        modem->disconnect();
+       //modem->disconnect();
         break;
       case SOCK_CLOSED: // CLOSED
         if (!txFIFO.empty()) {
