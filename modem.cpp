@@ -60,7 +60,7 @@ bool Cmodem::HandleAtCmd(c08* _cmd, const char* _expRsp) {
     debugUart.uprintf("\r\nCmd : %s", _cmd);
 #endif
     pUart->sendStr(_cmd);
-    timeout.start(10);
+    timeout.start(20);
     while (!timeout.isSet() && !done) {
       _delay_ms(200);
       pUart->rxFifo.read((u08*) rxRsp, len, true);
@@ -151,7 +151,7 @@ bool Cmodem::initModem(void) {
   _delay_ms(5000);
   display.writeStringP(PSTR("Busy........"), 0, 3, false);
 
-  HandleAtCmd("ATE0\r", "ATE0");
+  HandleAtCmd("ATZE0V1X0\r", "ATE0");
 //  debugUart.sendStr_P(PSTR("\r\nRETRY: GSM"));
   if (!HandleAtCmd("AT\r", AT_OK)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT'"));
@@ -194,7 +194,6 @@ bool Cmodem::initModem(void) {
     goto retry;
   }
   display.writeStringP(PSTR("Busy.       "), 0, 3, false);
-  _delay_ms(2000);
 
   if (!HandleAtCmd("AT+CREG=0\r", "OK")) {
     debugUart.sendStr_P(PSTR("\r\nERROR: REGISTRATION"));
@@ -230,7 +229,7 @@ bool Cmodem::initIP(bool useDns) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CSTT'"));
   }
   display.writeStringP(PSTR("Busy..  "), 0, 3, false);
-
+ _delay_ms(3000);
   strcpy_P(txcmd, PSTR("AT+CIICR\r"));
   if (!HandleAtCmd(txcmd, AT_OK)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CIICR'"));

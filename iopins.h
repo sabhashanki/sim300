@@ -10,7 +10,6 @@
 #define DATAFLASH_CS_PORTIN         PINB
 #define DATAFLASH_CS_PIN            0
 
-
 #define OPTO_0_PORT           PORTB
 #define OPTO_0_DDR            DDRB
 #define OPTO_0_PORTIN         PINB
@@ -27,8 +26,6 @@
 #define MDM_LED_PIN           6
 
 //====================PORTD=======================
-
-
 
 //====================PORTH=======================
 #define MDM_CTS_PORT         PORTH
@@ -133,17 +130,12 @@
 #define POWERFAIL_PORTIN      PINF
 #define POWERFAIL_PIN         0
 
-
-
-
 //====================MACROS=======================
 #define MDM_PWR_FET_ON()      cbi(MDM_VCC_CTRL_PORT,MDM_VCC_CTRL_PIN)
 #define MDM_PWR_FET_OFF()     sbi(MDM_VCC_CTRL_PORT,MDM_VCC_CTRL_PIN)
 
 #define MDM_PWR_KEY_ON()      sbi(MDM_PWR_KEY_PORT,MDM_PWR_KEY_PIN)
 #define MDM_PWR_KEY_OFF()     cbi(MDM_PWR_KEY_PORT,MDM_PWR_KEY_PIN)
-
-
 
 // =============== INPUTS ======================
 #define GET_DSR_STATUS()      bit_is_clear(MDM_DSR_PORTIN,MDM_DSR_PIN)  // voltage logic 0 is asserted status - OK
@@ -189,8 +181,6 @@
 #define BUZZER_OFF()          cbi(BUZZER_PORT,BUZZER_PIN)
 #define BUZZER_TOGGLE()       BIT_TOGGLE(BUZZER_PORT,BUZZER_PIN)
 
-
-
 #define SWITCH_MDM_ON()       MDM_PWR_FET_ON();\
                               timerPause(200);\
                               MDM_PWR_KEY_ON();\
@@ -203,7 +193,6 @@
                               MDM_PWR_KEY_OFF();\
                               timerPause(2000);\
                               MDM_PWR_FET_OFF();
-
 
 #define PWR_SWITCH_ON()       sbi(POWER_CTRL_PORT,POWER_CTRL_PIN)
 #define PWR_SWITCH_OFF()      cbi(POWER_CTRL_PORT,POWER_CTRL_PIN)
