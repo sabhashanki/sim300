@@ -77,7 +77,8 @@ int main(void) {
   display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
   display.writeStringP(PSTR("Initializing..."), 0, 1, false);
   display.writeStringP(PSTR("GSM Modem"), 0, 2, false);
-  display.writeStringP(PSTR("Busy..."), 0, 3, false);
+  display.writeStringP(PSTR("Busy........."), 0, 3, false);
+
 #ifdef MODEM
   _delay_ms(500);
   if (!modem.initModem())
@@ -198,7 +199,7 @@ int main(void) {
       rf.packetAvailable = false;
       timeout.start(moveTime);
       done = false;
-      timeout.start(moveTime);
+      timeout.start(moveTime*2);
       while (!done && !timeout.isSet()) {
         rf.setRxMode();
         rf.rxFifo.clear();
@@ -220,6 +221,8 @@ int main(void) {
       } else {
         status = COVER_CANT_CLOSE;
       }
+      status = COVER_OPEN;
+
     } else if (key == 2) {
       display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
       display.writeStringP(PSTR("Ready"), 0, 1, false);
@@ -258,7 +261,7 @@ int main(void) {
       rf.rxFifo.clear();
       rf.packetAvailable = false;
       done = false;
-      timeout.start(moveTime);
+      timeout.start(moveTime*2);
       while (!done && !timeout.isSet()) {
         rf.setRxMode();
         rf.rxFifo.clear();
@@ -280,6 +283,8 @@ int main(void) {
       } else {
         status = COVER_CANT_CLOSE;
       }
+      status = COVER_CLOSED;
+
     }
 
     // Log to server

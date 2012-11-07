@@ -29,6 +29,7 @@ const char SIM_RDY[] = "+CPIN: READY";
 const char AT_IP_CLOSE[] = "CLOSE OK";
 
 extern Cuart debugUart;
+extern Cdisplay display;
 
 #define DEBUG_PRINT
 /*******************************************************************************/
@@ -148,42 +149,58 @@ bool Cmodem::initModem(void) {
     _delay_ms(5);
   }
   _delay_ms(5000);
+  display.writeStringP(PSTR("Busy........"), 0, 3, false);
+
   HandleAtCmd("ATE0\r", "ATE0");
 //  debugUart.sendStr_P(PSTR("\r\nRETRY: GSM"));
   if (!HandleAtCmd("AT\r", AT_OK)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT'"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy.......  "), 0, 3, false);
   if (!HandleAtCmd("AT+CIPHEAD=1\r", AT_OK)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CIPHEAD=1'"));
     goto retry;
   }
+
+  display.writeStringP(PSTR("Busy......   "), 0, 3, false);
+
   if (!HandleAtCmd("AT+CMGF=1\r", AT_OK)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CMGF=1'"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy.....    "), 0, 3, false);
+
   if (!checkSignalStrength()) {
     debugUart.sendStr_P(PSTR("\r\nERROR: SIGNAL STRENGTH"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy....     "), 0, 3, false);
+
   if (!HandleAtCmd("AT+CPIN?\r", "+CPIN: READY")) {
     debugUart.sendStr_P(PSTR("\r\nERROR: CHECK SIM"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy...      "), 0, 3, false);
+
   if (!HandleAtCmd("AT+CREG=2\r", "OK")) {
     debugUart.sendStr_P(PSTR("\r\nERROR: REGISTRATION"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy..       "), 0, 3, false);
+
   if (!HandleAtCmd("AT+CREG?\r", "+CREG: 2,1")) {
     debugUart.sendStr_P(PSTR("\r\nERROR: REGISTRATION"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy.       "), 0, 3, false);
   _delay_ms(2000);
 
   if (!HandleAtCmd("AT+CREG=0\r", "OK")) {
     debugUart.sendStr_P(PSTR("\r\nERROR: REGISTRATION"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy   "), 0, 3, false);
   debugUart.sendStr_P(PSTR("\r\nDONE: GSM"));
   return true;
 }
@@ -197,28 +214,36 @@ bool Cmodem::initIP(bool useDns) {
   }
   debugUart.sendStr_P(PSTR("\r\nSTART: TCP"));
   rc++;
+  display.writeStringP(PSTR("Busy.....  "), 0, 3, false);
   if (!HandleAtCmd("AT+CGDCONT=1,\"IP\",\"internet\"\r", AT_OK)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CGDCONT=1'"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy....  "), 0, 3, false);
   if (!HandleAtCmd("AT+CDNSORIP=0\r", AT_OK)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CDNSORIP'"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy...  "), 0, 3, false);
   strcpy_P(txcmd, PSTR("AT+CSTT=\"internet\",\"\",\"\"\r"));
   if (!HandleAtCmd(txcmd, AT_OK)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CSTT'"));
   }
+  display.writeStringP(PSTR("Busy..  "), 0, 3, false);
+
   strcpy_P(txcmd, PSTR("AT+CIICR\r"));
   if (!HandleAtCmd(txcmd, AT_OK)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CIICR'"));
     goto retry;
   }
+  display.writeStringP(PSTR("Busy.  "), 0, 3, false);
+
   strcpy_P(txcmd, PSTR("AT+CIFSR\r"));
   if (!HandleAtCmd(txcmd, AT_IP)) {
     debugUart.sendStr_P(PSTR("\r\nERROR: 'AT+CIFSR'"));
     goto retry;
   }
+
   debugUart.sendStr_P(PSTR("\r\nDONE: TCP"));
   return true;
 }
