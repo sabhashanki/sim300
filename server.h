@@ -19,7 +19,7 @@ namespace NS_CSERVER {
   } eMsgType;
   /****************************************************************************************/
   typedef enum {
-    COVER_CLOSED = 0, COVER_OPEN = 1,
+    COVER_CLOSED = 0, COVER_OPEN = 1, COVER_CANT_OPEN = 2, COVER_CANT_CLOSE = 3
   } eCoverStatus;
   /****************************************************************************************/
   typedef struct {

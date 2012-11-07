@@ -8,6 +8,11 @@ static const u08 close = 0xDD;
 static const u08 moveTime = 45;
 /****************************************************************************************/
 #define MODEM
+/*****************************************************************************/
+typedef enum {
+  OPEN = 1, CLOSE = 2, OPEN_BUSY = 3, CLOSE_BUSY = 4, ERROR_OPENING = 5, ERROR_CLOSING = 6
+} eMotorLockStatus;
+
 /****************************************************************************************/
 typedef struct {
     u08 cmd;
@@ -54,6 +59,10 @@ Csignal timeout;
 eCoverStatus status = COVER_CLOSED;
 /****************************************************************************************/
 int main(void) {
+  bool done = false;
+  u08 cntRx = 0;
+  eMotorLockStatus lockstate;
+
   init();
   scheduler.attach(&timeout);
   modem.ServerSetIP((c08*) "41.181.16.116", (c08*) "61000", false);
@@ -122,13 +131,23 @@ int main(void) {
       _delay_ms(200);
     }
     rf.rxFifo.read(radio, radioPktLen);
-    display.writeStringP(PSTR("Done  "), 0, 3, false);
+    memcpy(&rsp, radio, sizeof(rsp));
+    if (rsp.status == OPEN) {
+      display.writeStringP(PSTR("Lock is open"), 0, 3, false);
+      lockstate = OPEN;
+    } else if (rsp.status == CLOSE) {
+      display.writeStringP(PSTR("Lock is closed"), 0, 3, false);
+      lockstate = CLOSE;
+    }
     _delay_ms(1000);
 
     display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
     display.writeStringP(PSTR("Ready"), 0, 1, false);
-    display.writeStringP(PSTR("PRESS 1 TO OPEN"), 0, 2, false);
-    display.writeStringP(PSTR("PRESS 2 TO CLOSE"), 0, 3, false);
+    if (lockstate == CLOSE) {
+      display.writeStringP(PSTR("PRESS 1 TO OPEN"), 0, 2, false);
+    } else if (lockstate == OPEN) {
+      display.writeStringP(PSTR("PRESS 2 TO CLOSE"), 0, 2, false);
+    }
     key = 0;
     while (!keypad.readKey(&key)) {
 
@@ -145,44 +164,122 @@ int main(void) {
       display.writeStringP(PSTR("Opening lock"), 0, 2, false);
       display.writeStringP(PSTR("..."), 0, 3, false);
 
+      //Send the open command
       cmd.cmd = open;
       cmd.onTime = moveTime;
-      for (u08 cnt = 0; cnt < 10; cnt++) {
-        rf.transmit(radio, radioPktLen);
-        _delay_ms(100);
+      done = false;
+      while (!done) {
+        rf.transmit((u08*) &cmd, radioPktLen);
+        rf.packetAvailable = false;
+        rf.setRxMode();
+        cntRx = 0;
+        while (!rf.packetAvailable && cntRx < 10) {
+          rf.rxISR();
+          _delay_ms(128);
+          cntRx++;
+        }
+        if (rf.packetAvailable) {
+          rf.rxFifo.read(radio, radioPktLen);
+          memcpy(&rsp, radio, sizeof(rsp));
+          if (rsp.status == OPEN_BUSY) {
+            done = true;
+          }
+        }
       }
-      _delay_ms(6000);
+//
+//      for (u08 cnt = 0; cnt < 10; cnt++) {
+//        rf.transmit((u08*) &cmd, radioPktLen);
+//        _delay_ms(100);
+//      }
+
+//Check when it is open
       rf.setRxMode();
       rf.rxFifo.clear();
       rf.packetAvailable = false;
-      timeout.start(moveTime - 6);
-      while (!rf.packetAvailable) {
-        rf.rxISR();
-        _delay_ms(200);
+      timeout.start(moveTime);
+      done = false;
+      timeout.start(moveTime);
+      while (!done && !timeout.isSet()) {
+        rf.setRxMode();
+        rf.rxFifo.clear();
+        rf.packetAvailable = false;
+        while (!rf.packetAvailable) {
+          rf.rxISR();
+          _delay_ms(200);
+        }
+        rf.rxFifo.read(radio, radioPktLen);
+        rf.packetAvailable = false;
+        memcpy(&rsp, radio, sizeof(rsp));
+        if (rsp.status == OPEN) {
+          done = true;
+        }
       }
-      status = COVER_OPEN;
+      if (done) {
+        status = COVER_OPEN;
+
+      } else {
+        status = COVER_CANT_CLOSE;
+      }
     } else if (key == 2) {
       display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
       display.writeStringP(PSTR("Ready"), 0, 1, false);
       display.writeStringP(PSTR("Closing lock"), 0, 2, false);
       display.writeStringP(PSTR("..."), 0, 3, false);
 
-      radio[1] = moveTime;
-      radio[0] = close;
-      for (u08 cnt = 0; cnt < 10; cnt++) {
-        rf.transmit(radio, radioPktLen);
-        _delay_ms(100);
+      //Send the open command
+      cmd.cmd = close;
+      cmd.onTime = moveTime;
+      done = false;
+      while (!done) {
+        rf.transmit((u08*) &cmd, radioPktLen);
+        rf.packetAvailable = false;
+        rf.setRxMode();
+        cntRx = 0;
+        while (!rf.packetAvailable && cntRx < 10) {
+          rf.rxISR();
+          _delay_ms(128);
+          cntRx++;
+        }
+        if (rf.packetAvailable) {
+          rf.rxFifo.read(radio, radioPktLen);
+          memcpy(&rsp, radio, sizeof(rsp));
+          if (rsp.status == CLOSE_BUSY) {
+            done = true;
+          }
+        }
       }
+
+//      for (u08 cnt = 0; cnt < 10; cnt++) {
+//        rf.transmit((u08*) &cmd, radioPktLen);
+//        _delay_ms(100);
+//      }
+      //Check when it is closed
       rf.setRxMode();
-      _delay_ms(6000);
       rf.rxFifo.clear();
       rf.packetAvailable = false;
-      timeout.start(moveTime - 6);
-      while (!rf.packetAvailable) {
-        rf.rxISR();
-        _delay_ms(200);
+      done = false;
+      timeout.start(moveTime);
+      while (!done && !timeout.isSet()) {
+        rf.setRxMode();
+        rf.rxFifo.clear();
+        rf.packetAvailable = false;
+        while (!rf.packetAvailable) {
+          rf.rxISR();
+          _delay_ms(200);
+        }
+        rf.rxFifo.read(radio, radioPktLen);
+        memcpy(&rsp, radio, sizeof(rsp));
+        rf.packetAvailable = false;
+        if (rsp.status == CLOSE) {
+          done = true;
+        }
       }
-      status = COVER_CLOSED;
+      if (done) {
+        status = COVER_CLOSED;
+
+      } else {
+        status = COVER_CANT_CLOSE;
+      }
     }
 
     // Log to server
