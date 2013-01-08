@@ -162,6 +162,7 @@ int main(void) {
       display.writeStringP(PSTR("PRESS 2 TO CLOSE"), 0, 3, false);
     }
     key = 0;
+    keypad.clear();
     while (!keypad.readKey(&key)) {
 
     }
@@ -212,7 +213,8 @@ int main(void) {
       done = false;
       timeout.start(moveTime);
       status = COVER_CANT_CLOSE;
-      while (!done) {
+      key = 0;
+      while (!done ) {
         rf.transmit((u08*) &cmd, radioPktLen);
         rf.packetAvailable = false;
         rf.rxFifo.clear();
@@ -226,6 +228,9 @@ int main(void) {
         memcpy(&rsp, radio, sizeof(rsp));
         if (rsp.status == CLOSE) {
           status = COVER_CLOSED;
+          done = true;
+        }
+        if (keypad.readKey(&key)){
           done = true;
         }
       }
