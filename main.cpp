@@ -108,7 +108,7 @@ int main(void) {
 //      status = COVER_OPEN;
 //    _delay_ms(20);
 //  }
-  while (1) {
+    while (1) {
     _delay_ms(500);
     display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
     display.writeStringP(PSTR("Ready"), 0, 1, false);
@@ -188,10 +188,10 @@ int main(void) {
         rf.packetAvailable = false;
         rf.rxFifo.clear();
         rf.setRxMode();
-        _delay_ms(200);
+        _delay_ms(500);
         while (!rf.packetAvailable) {
           rf.rxISR();
-          _delay_ms(200);
+          _delay_ms(100);
         }
         rf.rxFifo.read(radio, radioPktLen);
         memcpy(&rsp, radio, sizeof(rsp));
@@ -200,6 +200,7 @@ int main(void) {
           done = true;
         }
       }
+
     } else if (key == 2) {
       display.writeStringP(PSTR("Manhole Lock System"), 0, 0);
       display.writeStringP(PSTR("Ready"), 0, 1, false);
@@ -216,10 +217,10 @@ int main(void) {
         rf.packetAvailable = false;
         rf.rxFifo.clear();
         rf.setRxMode();
-        _delay_ms(200);
+        _delay_ms(500);
         while (!rf.packetAvailable) {
           rf.rxISR();
-          _delay_ms(200);
+          _delay_ms(100);
         }
         rf.rxFifo.read(radio, radioPktLen);
         memcpy(&rsp, radio, sizeof(rsp));
